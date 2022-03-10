@@ -1,12 +1,11 @@
-SRX = ['SRX6981205', 'SRX6981204', 'SRX6981203', 'SRX6981202', 'SRX6981201', 
-       'SRX6981200', 'SRX6981199', 'SRX6981198', 'SRX6981194', 'SRX6981193', 
-       'SRX6981192', 'SRX6981191', 'SRX6981190', 'SRX3789394', 'SRX3789395', 
-       'SRX3789396', 'SRX3789397', 'SRX3789390', 'SRX3789391', 'SRX3789392', 
-       'ERX2326470', 'ERX2326473', 'ERX2326481', 'ERX2326482', 'SRX7101177', 
-       'SRX7101178', 'SRX7101179', 'SRX7101180', 'SRX7101181', 'SRX7101182', 
-       'SRX7101183', 'SRX7101184', 'SRX7101185', 'SRX4632310', 'SRX4632311', 
-       'SRX4632312', 'SRX11241821', 'SRX11241819', 'SRX11241817']
+import pandas as pd
+import os
+
+m = pd.read_csv("inputs/metadata.csv", header = 0)
+m = m[m['accession_in_comp'] == False] # filter the metadata to public data that's not in the compendia
+SRX = list(m['experiment_accession'])
 STRAIN = ['pao1', 'pa14']
+
 
 rule all:
     input: 
@@ -37,20 +36,50 @@ rule index_transcriptome:
     '''
 
 rule fasterq_dump_sra:
-    output: "inputs/raw/sra/{srx}.fastq"
-    conda: "envs/sratools.yml"
+    output: "inputs/raw/sra/{srx}.fastq.gz"
     threads: 1
     resources:
-        mem_mb=8000 
-    params: tmp_dir = "tmp/"
-    shell:'''
-    fasterq-dump {wildcards.srx} -O {output} -t {params.tmp_dir} -f
-    '''
+        mem_mb=8000
+    params: 
+        tmp_dir = "tmp/",
+        out_dir = "inputs/raw/sra/",
+        out_pre = lambda wildcards: "inputs/raw/sra/" + wildcards.srx
+    run:
+        row = m.loc[m['experiment_accession'] == wildcards.srx]
+        srr = row['run'].values[0]
+        if not os.path.exists(str(output[0])):
+            shell("fasterq-dump {srr} -o {params.out_pre}.fastq --concatenate-reads -t {params.tmp_dir} -f")
+            if os.path.exists(str(params.out_pre) + ".fastq"):
+                shell("gzip {params.out_pre}.fastq")
+        # if SRA download fails, download from the ENA. Relies on ftp links in metadata table
+        print("moving on to ENA download")
+        if not os.path.exists(str(output[0])) and not os.path.exists(str(params.out_pre) + ".fastq"):
+            fastqs = row['fastq_ftp'].values[0]
+            fastqs = fastqs.split(";")
+            # when single end, just download
+            if len(fastqs) == 1:
+                fastq = fastqs[0]
+                shell("wget -O {output} ftp://{fastq}")
+            # when paired end, download, interleave, and remove _1 and _2 files.
+            else:
+                fastq_1 = fastqs[0]
+                fastq_2 = fastqs[1]
+                if not os.path.exists(params.out_pre + "_1.fastq.gz"):
+                    shell("wget -O {params.out_pre}_1.fastq.gz ftp://{fastq_1}")
+
+                if not os.path.exists(params.out_pre + "_2.fastq.gz"):
+                    shell("wget -O {params.out_pre}_2.fastq.gz ftp://{fastq_2}")
+
+                shell("reformat.sh in1={params.out_pre}_1.fastq.gz in2={params.out_pre}_2.fastq.gz out={output}")
+
+                if os.path.exists(output):
+                    os.remove(params.out_pre + "_1.fastq.gz")
+                    os.remove(params.out_pre + "_2.fastq.gz")
 
 rule salmon:
     input:
         idx = "outputs/t_indxs/{strain}_cdna_k15/info.json",
-        reads = "inputs/raw/sra/{srx}.fastq"
+        reads = "inputs/raw/sra/{srx}.fastq.gz"
     output: 
         quant = "outputs/salmon/{strain}/{srx}/quant.sf",
         logm = "outputs/salmon/{strain}/{srx}/aux_info/meta_info.json",
