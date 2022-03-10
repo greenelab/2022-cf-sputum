@@ -4,3 +4,6 @@ channels:
    - defaults
 dependencies:
    - snakemake-minimal=7.1.0
+   - sra-tools=2.9.6
+   - pandas=1.4.1
+   - bbmap=38.96
