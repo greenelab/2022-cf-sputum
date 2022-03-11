@@ -3,6 +3,7 @@ import os
 
 m = pd.read_csv("inputs/metadata.csv", header = 0)
 m = m[m['accession_in_comp'] == False] # filter the metadata to public data that's not in the compendia
+m = m[m['pa_in_reads'] == True] # filter the metadata to samples that contained any Pa reads
 SRX = list(m['experiment_accession'])
 STRAIN = ['pao1', 'pa14']
 
