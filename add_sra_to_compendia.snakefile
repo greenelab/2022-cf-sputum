@@ -9,17 +9,20 @@ STRAIN = ['pao1', 'pa14']
 
 
 rule all:
-    input: 
-        expand("outputs/salmon/{strain}/{srx}/quant.sf", strain = STRAIN, srx = SRX)
+    input:
+        expand("outputs/multiqc/logs_{strain}_multiqc_report.html", strain = STRAIN),
+        expand("outputs/combined_new_srx/num_reads_{strain}.csv", strain = STRAIN)
         
 rule download_pa14_transcriptome:
     output: "inputs/transcriptomes/pa14.cdna.all.fa.gz"
+    resources: mem_mb = 1000
     shell:'''
     wget -O {output} ftp://ftp.ensemblgenomes.org/pub/bacteria/release-49/fasta/bacteria_16_collection/pseudomonas_aeruginosa_ucbpp_pa14_gca_000014625/cdna/Pseudomonas_aeruginosa_ucbpp_pa14_gca_000014625.ASM1462v1.cdna.all.fa.gz
     '''
 
 rule download_pao1_transcriptome:
     output: "inputs/transcriptomes/pao1.cdna.all.fa.gz"
+    resources: mem_mb = 1000
     shell:'''
     wget -O {output} ftp://ftp.ensemblgenomes.org/pub/bacteria/release-49/fasta/bacteria_5_collection/pseudomonas_aeruginosa_pao1_gca_000006765/cdna/Pseudomonas_aeruginosa_pao1_gca_000006765.ASM676v1.cdna.all.fa.gz
     '''
@@ -97,6 +100,57 @@ rule salmon:
         -r {input.reads} -o {params.out_dir}
     '''
     
-#shape_comp/gene_names.R
-#shape_comp/quant_collect.R
-#shape_comp/logs_collect.py
+rule multiqc_salmon_aux_files:
+    """
+    compiles all log information for the salmon runs, including library type, reads mapped, etc.
+    does not join this file to the compendia logs, 
+    """
+    input: expand("outputs/salmon/{{strain}}/{srx}/aux_info/meta_info.json", srx = SRX)
+    output: "outputs/multiqc/logs_{strain}_multiqc_report.html"
+    params: 
+        indir = lambda wildcards: "outputs/salmon/" + wildcards.strain,
+        outdir = "outputs/multiqc"
+    conda: "envs/multiqc.yml"
+    threads: 1
+    resources:
+        mem_mb=8000 
+    shell:'''
+    multiqc -o {params.outdir} -i logs_{wildcards.strain} {params.indir}
+    '''
+
+rule download_pao1_annotation_map:
+    output: "inputs/transcriptomes/pao1_gene_names.csv"
+    threads: 1
+    resources:
+        mem_mb=800 
+    shell:'''
+    wget -O {output} https://osf.io/ubx4s/download
+    '''
+    
+rule download_p14_annotation_map:
+    output: "inputs/transcriptomes/pa14_gene_names.csv"
+    threads: 1
+    resources:
+        mem_mb=800
+    shell:'''
+    wget -O {output} https://osf.io/ema5c/download
+    '''
+ 
+rule combine_quant_sf_files:
+    """
+    combines the quant sf files into two csv files, one that records ReadNum and
+    one that record TPM. Annotations are also switched from the transcriptome index
+    to the gene index based on a pre-existing annotation mapping file.
+    """
+    input:
+        annot_map = "inputs/transcriptomes/{strain}_gene_names.csv",
+        quant = expand("outputs/salmon/{{strain}}/{srx}/quant.sf", srx = SRX)
+    output: 
+        numreads="outputs/combined_new_srx/num_reads_{strain}.csv",
+        tpm="outputs/combined_new_srx/TPM_{strain}.csv"
+    conda: "envs/tidyverse.yml"
+    threads: 1
+    resources:
+        mem_mb=4000
+    script: "scripts/snakemake_quant_collect.R"
+    
