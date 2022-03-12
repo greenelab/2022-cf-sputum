@@ -11,7 +11,8 @@ STRAIN = ['pao1', 'pa14']
 rule all:
     input:
         expand("outputs/multiqc/logs_{strain}_multiqc_report.html", strain = STRAIN),
-        expand("outputs/combined_new_srx/num_reads_{strain}.csv", strain = STRAIN)
+        expand("outputs/combined_compendia/num_reads_{strain}.csv", strain = STRAIN),
+        expand("tmp_{strain}", strain = STRAIN)
         
 rule download_pa14_transcriptome:
     output: "inputs/transcriptomes/pa14.cdna.all.fa.gz"
@@ -154,3 +155,117 @@ rule combine_quant_sf_files:
         mem_mb=4000
     script: "scripts/snakemake_quant_collect.R"
     
+
+rule download_pao1_raw_tpm_compendia:
+    output: "inputs/original_compendia/TPM_pao1_cdna_k15.csv"
+    threads: 1
+    resources:
+        mem_mb=800
+    shell:'''
+    wget -O {output} https://osf.io/urz94/download
+    '''
+
+rule download_pao1_raw_numreads_compendia:
+    output: "inputs/original_compendia/num_reads_pao1_cdna_k15.csv"
+    threads: 1
+    resources:
+        mem_mb=800
+    shell:'''
+    wget -O {output} https://osf.io/67j4g/download
+    '''
+
+rule download_pa14_raw_tpm_compendia:
+    output: "inputs/original_compendia/TPM_pa14_cdna_k15.csv"
+    threads: 1
+    resources:
+        mem_mb=800
+    shell:'''
+    wget -O {output} https://osf.io/pqkb2/download
+    '''
+
+rule download_pa14_raw_numread_compendia:
+    output: "inputs/original_compendia/num_reads_pa14_cdna_k15.csv"
+    threads: 1
+    resources:
+        mem_mb=800
+    shell:'''
+    wget -O {output} https://osf.io/uvpsa/download
+    '''
+
+rule combine_compendia_with_new_samples_raw:
+    input:
+        numreads_new="outputs/combined_new_srx/num_reads_{strain}.csv",
+        tpm_new="outputs/combined_new_srx/TPM_{strain}.csv",
+        numreads_og="inputs/original_compendia/num_reads_{strain}_cdna_k15.csv",
+        tpm_og="inputs/original_compendia/TPM_{strain}_cdna_k15.csv"
+    output:
+        numreads="outputs/combined_compendia/num_reads_{strain}.csv",
+        tpm="outputs/combined_compendia/TPM_{strain}.csv"
+    conda: "envs/tidyverse.yml"
+    threads: 1
+    resources:
+        mem_mb=4000
+    script: "scripts/snakemake_combine_compendia.R"
+
+rule download_filter_functions:
+    output: "scripts/filter_functions.R"
+    shell:'''
+    wget -O {output} https://raw.githubusercontent.com/georgiadoing/pa-seq-compendia/main/qc_filtering/filter_functions.R
+    '''
+
+rule download_pao1_orthologs:
+    output: "inputs/transcriptomes/Pseudomonas_aeruginosa_pao1_orthologs.csv.gz"
+    threads: 1
+    resources: mem_mb = 1000
+    shell:'''
+    wget -O {output} https://pseudomonas.com/downloads/pseudomonas/pgd_r_20_2/Pseudomonas_aeruginosa_PAO1_107/Pseudomonas_aeruginosa_PAO1_107_orthologs.csv.gz
+    '''
+
+rule download_pa14_orthologs:
+    output: "inputs/transcriptomes/Pseudomonas_aeruginosa_pa14_orthologs.csv.gz"
+    threads: 1
+    resources: mem_mb = 1000
+    shell:'''
+    wget -O {output} https://pseudomonas.com/downloads/pseudomonas/pgd_r_20_2/Pseudomonas_aeruginosa_UCBPP-PA14_109/Pseudomonas_aeruginosa_UCBPP-PA14_109_orthologs.csv.gz
+    '''
+
+rule download_pa14_annotations:
+    output: "inputs/transcriptomes/Pseudomonas_aeruginosa_pa14_annotations.csv.gz"
+    threads: 1
+    resources: mem_mb = 1000
+    shell:'''
+    wget -O {output} https://pseudomonas.com/downloads/pseudomonas/pgd_r_20_2/Pseudomonas_aeruginosa_UCBPP-PA14_109/Pseudomonas_aeruginosa_UCBPP-PA14_109.csv.gz
+    '''
+
+rule download_pao1_annotations:
+    output: "inputs/transcriptomes/Pseudomonas_aeruginosa_pao1_annotations.csv.gz"
+    threads: 1
+    resources: mem_mb = 1000
+    shell:'''
+wget -O {output} https://pseudomonas.com/downloads/pseudomonas/pgd_r_20_2/Pseudomonas_aeruginosa_PAO1_107/Pseudomonas_aeruginosa_PAO1_107.csv.gz
+    '''
+
+rule download_sra_run_table:
+rule filter_and_normalize_compendia:
+    input:
+        pa14_ortho= "inputs/transcriptomes/Pseudomonas_aeruginosa_pa14_orthologs.csv.gz",
+        pao1_ortho= "inputs/transcriptomes/Pseudomonas_aeruginosa_pao1_orthologs.csv.gz",
+        pa14_annot= "inputs/transcriptomes/Pseudomonas_aeruginosa_pa14_annotations.csv.gz",
+        pao1_annot= "inputs/transcriptomes/Pseudomonas_aeruginosa_pao1_annotations.csv.gz",
+        pa14_genes= "inputs/transcriptomes/pa14_gene_names.csv",
+        pao1_genes= "inputs/transcriptomes/pao1_gene_names.csv"
+        sraruntab = "",
+        annofuncs = "scripts/snakemake_annotation_functions.R",
+        filtfuncs = "scripts/filter_functions.R",
+        numreads  = expand("outputs/combined_compendia/num_reads_{strain}.csv", strain = STRAINS),
+        tpm       = expand("outputs/combined_compendia/TPM_{strain}.csv", strain = STRAINS)
+    output:
+        numreads="tmp_{strain}",
+    #    tpm=""
+    conda: "envs/tidyverse.yml"
+    threads: 1
+    resources:
+        mem_mb=4000
+    script: "scripts/snakemake_filter_and_normalize_compendia.R"
+
+

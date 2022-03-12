@@ -28,7 +28,7 @@ sf_files <- unlist(snakemake@input[["quant"]])
 
 sf <- sf_files %>%
   set_names() %>%                                                    # add filename as a column
-  map_dfr(read_tsv, .id = "srx") %>%                                 # read in files
+  map_dfr(read_tsv, show_col_types = FALSE, .id = "srx") %>%                                 # read in files
   mutate(srx = basename(dirname(srx))) %>%                           # edit filename to srx ID
   left_join(annotation_map, by = c("Name" = "tx_name")) %>%          # join to gene name
   select(srx, Name = Name.y, Length, EffectiveLength, TPM, NumReads) # drop transcript name
