@@ -211,11 +211,6 @@ rule combine_compendia_with_new_samples_raw:
         mem_mb=4000
     script: "scripts/snakemake_combine_compendia.R"
 
-rule download_filter_functions:
-    output: "scripts/filter_functions.R"
-    shell:'''
-    wget -O {output} https://raw.githubusercontent.com/georgiadoing/pa-seq-compendia/main/qc_filtering/filter_functions.R
-    '''
 
 rule download_pao1_orthologs:
     output: "inputs/transcriptomes/Pseudomonas_aeruginosa_pao1_orthologs.csv.gz"
