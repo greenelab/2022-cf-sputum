@@ -23,7 +23,7 @@
 ##
 ## ---------------------------
 ##
-## Notes: Modified to requite DESeq2, remove RVenn dependency
+## Notes: Modified to require DESeq2, remove RVenn dependency
 ## Source: https://raw.githubusercontent.com/georgiadoing/pa-seq-compendia/main/qc_filtering/filter_functions.R  
 ##
 ## ---------------------------
