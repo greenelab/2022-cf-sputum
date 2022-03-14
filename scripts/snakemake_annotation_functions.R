@@ -24,9 +24,9 @@ PAO1_orth <- read.csv("inputs/transcriptomes/Pseudomonas_aeruginosa_pao1_ortholo
 # https://pseudomonas.com/downloads/pseudomonas/pgd_r_20_2/Pseudomonas_aeruginosa_UCBPP-PA14_109/Pseudomonas_aeruginosa_UCBPP-PA14_109_orthologs.csv.gz
 PA14_orth <- read.csv('inputs/transcriptomes/Pseudomonas_aeruginosa_pa14_orthologs.csv.gz')
 # https://pseudomonas.com/downloads/pseudomonas/pgd_r_20_2/Pseudomonas_aeruginosa_UCBPP-PA14_109/Pseudomonas_aeruginosa_UCBPP-PA14_109.csv.gz
-PA14_ann <- read.csv("inputs/transcriptomes/Pseudomonas_aeruginosa_pa14_annotations.csv.gz", skip = 2)
+PA14_ann <- read.csv("inputs/transcriptomes/Pseudomonas_aeruginosa_pa14_annotations.csv.gz")
 # https://pseudomonas.com/downloads/pseudomonas/pgd_r_20_2/Pseudomonas_aeruginosa_PAO1_107/Pseudomonas_aeruginosa_PAO1_107.csv.gz
-PAO1_ann <- read.csv('inputs/transcriptomes/Pseudomonas_aeruginosa_pao1_annotations.csv.gz', skip = 2)
+PAO1_ann <- read.csv('inputs/transcriptomes/Pseudomonas_aeruginosa_pao1_annotations.csv.gz')
 PAO1_cdna <- read.csv('inputs/transcriptomes/pao1_gene_names.csv')
 PA14_cdna <- read.csv('inputs/transcriptomes/pa14_gene_names.csv')
 
@@ -42,7 +42,7 @@ name_to_PAO1 <- function(x){
   if(x==''){
     return(x)
   }
-  out_num <- PAO1_ann$Locus.Tag[PAO1_ann$Name == x]
+  out_num <- PAO1_ann$Locus.Tag[PAO1_ann$Gene.Name == x]
   if(identical(out_num, character(0))){
     return(x)
   }
@@ -71,7 +71,7 @@ name_to_PA14 <- function(x){
   if(x==''){
     return(x)
   }
-  out_num <- PA14_ann$Locus.Tag[PA14_ann$Name == x]
+  out_num <- PA14_ann$Locus.Tag[PA14_ann$Gene.Name == x]
   if(identical(out_num, character(0))){
     return(x)
   }
