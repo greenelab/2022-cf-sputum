@@ -30,8 +30,30 @@ snakemake -s add_sra_to_compendia.snakefile -j 2 --use-conda --rerun-incomplete 
 
 ## Tools and data
 
-Recently, a compendia of *P. aeruginosa* gene expression were created using publicly available RNA-seq data (see [preprint](https://doi.org/10.1101/2022.01.24.477642) and [data repository](https://osf.io/s9gyu/)).
+Recently, a compendia of *P. aeruginosa* gene expression were created using publicly available RNA-seq data (see [preprint](https://doi.org/10.1101/2022.01.24.477642), [data repository](https://osf.io/s9gyu/), and [GitHub repository](https://github.com/georgiadoing/pa-seq-compendia)).
 This repository leverages these compendia to identify transcriptome signatures relevant to CF. 
-Given that new RNA-seq sputum samples have been processed since the compendia construction, this repository includes a snakefile that processes new samples by SRA experiment accession and adds them to the compendia.
+Given that new RNA-seq sputum samples have been processed since the compendia construction, and since some sputum samples weren't included in the compendia because they were not annotated as containing *P aeruginosa*, this repository includes a snakefile that processes new samples by SRA experiment accession and adds them to the compendia.
 
 We intend to use the software tools eADAGE and SOPHIE to discover and rank metabolite-specific pathways by specific relevance to CF, and sourmash gather to identify specific strains present in each sample.
+
+## Adding new SRA accessions to the Pa compendia using `add_sra_to_compendia.snakefile`
+
+The `add_sra_to_compendia.snakefile` orchestrates adding new SRX/SRA accessions to the *P aeruginosa* compendia referenced above.
+It relies on a metadata sheet, which in this repository is found at `inputs/metadata.csv`.
+The pipeline primarily relies on three columns:
+
+1. `run`: SRA run accession (usually begins with ERR, SRR, etc.)
+2. `experiment_accession`: SRA experiment accession (usually begins with ERX, SRX, etc)
+3. `fastq_ftp`: ftp links for the sequencing data on the European Nucleotide Archive
+
+This file can be created by hand, or a file with all of this information can be downloaded from the European Nucleotide Archive by searching for an SRA run, experiment, or study accession and using the "Download report" function. 
+
+Currently, the pipeline is written to require two additional metadata columns, `accession_in_comp` and `pa_in_reads`, which are used to filter some accessions out before preprocessing them to add to the compendia:
+``` 
+m = m[m['accession_in_comp'] == False] # filter the metadata to public data that's not in the compendia
+m = m[m['pa_in_reads'] == True] # filter the metadata to samples that contained any Pa reads
+```
+These columns can be removed from a metadata table and the lines removed from the snakefile and those columns will no longer be required.
+
+Adding new samples to the compendia requires new filtering and normalization, as these processes use the entire data set.
+We expect the changes between compendia to be negligible, but will test this soon.
