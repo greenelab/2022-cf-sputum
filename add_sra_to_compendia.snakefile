@@ -11,8 +11,12 @@ STRAIN = ['pao1', 'pa14']
 rule all:
     input:
         expand("outputs/multiqc/logs_{strain}_multiqc_report.html", strain = STRAIN),
-        expand("outputs/combined_compendia/num_reads_{strain}.csv", strain = STRAIN),
-        expand("tmp_{strain}", strain = STRAIN)
+        "outputs/filt_norm_compendia/pao1_aligned_compendium_p2_filtered_tpm.csv",
+        "outputs/filt_norm_compendia/pao1_aligned_compendium_p2_filtered_num_reads.csv",
+        "outputs/filt_norm_compendia/pao1_aligned_compendium_p2_filtered_counts_norm.csv",
+        "outputs/filt_norm_compendia/pa14_aligned_compendium_p2_filtered_tpm.csv",
+        "outputs/filt_norm_compendia/pa14_aligned_compendium_p2_filtered_num_reads.csv",
+        "outputs/filt_norm_compendia/pa14_aligned_compendium_p2_filtered_counts_norm.csv",
         
 rule download_pa14_transcriptome:
     output: "inputs/transcriptomes/pa14.cdna.all.fa.gz"
@@ -246,6 +250,13 @@ wget -O {output} https://pseudomonas.com/downloads/pseudomonas/pgd_r_20_2/Pseudo
     '''
 
 rule download_sra_run_table:
+    output: "inputs/original_compendia/SraRunTable.csv"
+    threads: 1
+    resources: mem_mb = 1000
+    shell:'''
+    wget -O {output} https://osf.io/pt7am/download
+    '''
+
 rule filter_and_normalize_compendia:
     input:
         pa14_ortho= "inputs/transcriptomes/Pseudomonas_aeruginosa_pa14_orthologs.csv.gz",
@@ -253,16 +264,20 @@ rule filter_and_normalize_compendia:
         pa14_annot= "inputs/transcriptomes/Pseudomonas_aeruginosa_pa14_annotations.csv.gz",
         pao1_annot= "inputs/transcriptomes/Pseudomonas_aeruginosa_pao1_annotations.csv.gz",
         pa14_genes= "inputs/transcriptomes/pa14_gene_names.csv",
-        pao1_genes= "inputs/transcriptomes/pao1_gene_names.csv"
-        sraruntab = "",
+        pao1_genes= "inputs/transcriptomes/pao1_gene_names.csv",
+        sraruntab = "inputs/original_compendia/SraRunTable.csv",
         annofuncs = "scripts/snakemake_annotation_functions.R",
         filtfuncs = "scripts/filter_functions.R",
-        numreads  = expand("outputs/combined_compendia/num_reads_{strain}.csv", strain = STRAINS),
-        tpm       = expand("outputs/combined_compendia/TPM_{strain}.csv", strain = STRAINS)
+        numreads  = expand("outputs/combined_compendia/num_reads_{strain}.csv", strain = STRAIN),
+        tpm       = expand("outputs/combined_compendia/TPM_{strain}.csv", strain = STRAIN)
     output:
-        numreads="tmp_{strain}",
-    #    tpm=""
-    conda: "envs/tidyverse.yml"
+        tpm_filt_pao1="outputs/filt_norm_compendia/pao1_aligned_compendium_p2_filtered_tpm.csv",
+        numreads_filt_pao1="outputs/filt_norm_compendia/pao1_aligned_compendium_p2_filtered_num_reads.csv",
+        numreads_filt_norm_pao1="outputs/filt_norm_compendia/pao1_aligned_compendium_p2_filtered_counts_norm.csv",
+        tpm_filt_pa14="outputs/filt_norm_compendia/pa14_aligned_compendium_p2_filtered_tpm.csv",
+        numreads_filt_pa14="outputs/filt_norm_compendia/pa14_aligned_compendium_p2_filtered_num_reads.csv",
+        numreads_filt_norm_pa14="outputs/filt_norm_compendia/pa14_aligned_compendium_p2_filtered_counts_norm.csv",
+    conda: "envs/filt_and_norm.yml"
     threads: 1
     resources:
         mem_mb=4000
