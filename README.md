@@ -56,7 +56,7 @@ The pipeline primarily relies on three columns:
 
 This file can be created by hand, or a file with all of this information can be downloaded from the European Nucleotide Archive by searching for an SRA run, experiment, or study accession and using the "Download report" function. 
 
-Currently, the pipeline is written to require two additional metadata columns, `accession_in_comp` and `pa_in_reads`, which are used to filter some accessions out before preprocessing them to add to the compendia:
+Currently, the pipeline is written to require two additional metadata columns, `accession_in_comp` and `pa_in_reads`, which are used to filter some accessions out before preprocessing them to add to the compendia. I added both columns manually to the metadata table, and each is a logical column designed to subset the metadata quickly. `accession_in_comp` records whether the SRX accession was already in the (filtered and normalized) compendia, and `pa_in_reads` records whether *P. aeruginosa` was detected in the reads at all either by sourmash gather or by salmon quasi mapping).
 ``` 
 m = m[m['accession_in_comp'] == False] # filter the metadata to public data that's not in the compendia
 m = m[m['pa_in_reads'] == True] # filter the metadata to samples that contained any Pa reads
