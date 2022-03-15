@@ -1,4 +1,4 @@
-# Using *Pseudomonas aeruginosa* transcriptome profiles to discover facets of cystic fibrosis disease processes
+# Using *Pseudomonas aeruginosa* transcriptome profiles to discover facets of cystic fibrosis (CF) disease processes
 
 1) Identify metabolite candidates that promote Pa growth 
 2) Test whether metabolites that inversely correlate with CF lung function induce Pa virulence-related pathways
