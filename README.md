@@ -27,6 +27,14 @@ Alternatively, snakemake can be executed without a cluster:
 ```
 snakemake -s add_sra_to_compendia.snakefile -j 2 --use-conda --rerun-incomplete -k -n
 ```
+These parameters are described below:
+
++`-s` specifies the snakefile to be executed (here, `add_sra_to_compendia.snakefile`)
++`-j 2` parallelizes the snakefile over two cores (drop to `-j 1` to only run one process at a time)
++ `--use-conda` tells snakemake to use conda to manage software environments for each rule
++ `--rerun-incomplete` tells snakemake to rerun rules when it thinks a file is incomplete, e.g. as may occur if a file is half-finished when a snakemake process is terminated.
++ `-k` indicates for the snakefile to keep running even if a rule fails. Snakemake will attempt to run all rules that don't depend on the output of the failed rule.
++ `-n` specifies a dry run. Remove this to actually execute the snakefile. The dry run is useful to make sure snakemake is running the desired rules for the desired number of times.
 
 ## Tools and data
 
