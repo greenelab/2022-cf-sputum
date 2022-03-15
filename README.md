@@ -34,7 +34,7 @@ Recently, a compendia of *P. aeruginosa* gene expression were created using publ
 This repository leverages these compendia to identify transcriptome signatures relevant to CF. 
 Given that new RNA-seq sputum samples have been processed since the construction of the compendia, and since some sputum samples weren't included in the compendia because they were not annotated as containing *P aeruginosa*, this repository includes a snakefile that processes new samples by SRA experiment accession and adds them to the existing compendia.
 
-We intend to use the software tools eADAGE and SOPHIE to discover and rank metabolite-specific pathways by specific relevance to CF, and sourmash gather to identify specific strains present in each sample.
+We intend to use the software tools [eADAGE](https://pubmed.ncbi.nlm.nih.gov/28711280/) and [SOPHIE](https://www.biorxiv.org/content/10.1101/2021.05.24.445440v1) to discover and rank metabolite-specific pathways by specific relevance to CF, and sourmash gather to identify specific strains present in each sample.
 
 ## Adding new SRA accessions to the Pa compendia using `add_sra_to_compendia.snakefile`
 
