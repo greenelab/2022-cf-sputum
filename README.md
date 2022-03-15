@@ -8,7 +8,7 @@
 
 This repository uses conda to manage software installations. 
 You can find operating system-specific instructions for installing miniconda [here](https://docs.conda.io/en/latest/miniconda.html).
-
+To setup the environment required for this repository, run the following commands:
 ```
 conda env create --name sputum --file environment.yml
 conda activate sputum
