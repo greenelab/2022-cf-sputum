@@ -2,7 +2,7 @@
 ##
 ## Script name: annotation_functions.R
 ##
-## Description:
+## Description: functions to facilitate translation of one annotation type to another (transcript, gene, ortholog)
 ##
 ## Args:
 ##
