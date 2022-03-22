@@ -49,7 +49,8 @@ rule rnaseq_sample_sourmash_sketch:
     inputs/raw/sra/{srx}.fastq.gz. If that file does exists, this rule will
     sketch from that file. If it does not exists, this rule will streaming download
     the SRA accession and pipe it to the sketch command, that way the raw data 
-    doesn't have to be written to disk. Because of this rule operating based on
+    doesn't have to be written to disk. 
+    Warning: Because of this rule operating based on
     the fastq.gz files existing, this snakefile should not be run in parallel with
     the add_sra_to_compendia.snakefile that is also in this directory.
     """
