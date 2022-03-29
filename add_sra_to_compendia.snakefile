@@ -108,6 +108,26 @@ rule salmon:
         --minScoreFraction 0.65 --fldMean 51 --seqBias -l A    \
         -r {input.reads} -o {params.out_dir}
     '''
+
+rule interleave_reads:
+    """
+    Since paired-end reads need to be processed as single-end, interleave reads
+    using the same code as is in the download script for publicly available samples
+    No conda env is required for this rule since everything is installed in the
+    `sputum` env
+    Rule assumes that input files are already in place at inputs/raw/hogan/
+    """ 
+    output: "outputs/interleaved_spu/{spu}.fastq.gz"
+    params: indir = "inputs/raw/hogan/"
+    threads: 1
+    resources: mem_mb = 4000
+    run:
+        # use metadata to determine input file names, which have additional characters
+        # over what is in the spu wildcard
+        row = h.loc[h['sample'] == wildcards.spu]
+        r1 = row['r1'].values[0]
+        r2 = row['r2'].values[0]
+        shell("reformat.sh in1={params.indir}{r1} in2={params.indir}{r2} out={output}")
     
 rule salmon_spu:
     """
@@ -122,10 +142,10 @@ rule salmon_spu:
     """
     input:
         idx = "outputs/t_indxs/{strain}_cdna_k15/info.json",
-        reads = "inputs/raw/hogan/{spu}.fastq.gz"
+        reads = "outputs/interleaved_spu/{spu}.fastq.gz"
     output: 
-        quant = "outputs/salmon/{strain}/{spu}/quant.sf",
-        logm = "outputs/salmon/{strain}/{spu}/aux_info/meta_info.json",
+        quant = "outputs/salmon_spu/{strain}/{spu}/quant.sf",
+        logm = "outputs/salmon_spu/{strain}/{spu}/aux_info/meta_info.json",
     params: 
         indx_dir = lambda wildcards: "outputs/t_indxs/" + wildcards.strain + "_cdna_k15",
         out_dir  = lambda wildcards: "outputs/salmon/" + wildcards.strain + "/" + wildcards.spu 
@@ -146,7 +166,7 @@ rule multiqc_salmon_aux_files:
     """
     input:
         expand("outputs/salmon/{{strain}}/{srx}/aux_info/meta_info.json", srx = SRX),
-        expand("outputs/salmon/{{strain}}/{spu}/aux_info/meta_info.json", spu = SPU)
+        expand("outputs/salmon_spu/{{strain}}/{spu}/aux_info/meta_info.json", spu = SPU)
     output: "outputs/multiqc/logs_{strain}_multiqc_report.html"
     params: 
         indir = lambda wildcards: "outputs/salmon/" + wildcards.strain,
@@ -186,7 +206,7 @@ rule combine_quant_sf_files:
     input:
         annot_map = "inputs/transcriptomes/{strain}_gene_names.csv",
         quant_srx = expand("outputs/salmon/{{strain}}/{srx}/quant.sf", srx = SRX),
-        quant_spu = expand("outputs/salmon/{{strain}}/{spu}/quant.sf", spu = SPU),
+        quant_spu = expand("outputs/salmon_spu/{{strain}}/{spu}/quant.sf", spu = SPU),
     output: 
         numreads="outputs/combined_new/num_reads_{strain}.csv",
         tpm="outputs/combined_new/TPM_{strain}.csv"
