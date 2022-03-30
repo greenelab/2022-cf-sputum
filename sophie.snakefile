@@ -2,7 +2,7 @@ STRAIN = ["pa14", "pao1"]
 
 rule all:
     input: 
-        expand("outputs/sophie_training_compendia/{strain}_compendium.csv", strain = STRAIN)
+        expand("outputs/sophie_training_compendia/{strain}_compendium.csv", strain = STRAIN),
         expand("outputs/sophie_template_experiments/num_reads_{strain}_sputum.csv", strain = STRAIN)
 
 rule download_pao1_raw_numreads_compendia:
@@ -62,7 +62,7 @@ rule format_template_experiments_hogan:
     and one containing the sputum samples treated with metals.
     """
     input:
-        metadata="inputs/hogan_metadata.csv" 
+        metadata="inputs/hogan_metadata.csv",
         counts="outputs/combined_new/num_reads_{strain}.csv"
     output:
         sputum="outputs/sophie_template_experiments/num_reads_{strain}_sputum.csv",
