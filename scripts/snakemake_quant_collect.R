@@ -26,11 +26,12 @@ annotation_map <- read_csv(snakemake@input[["annot_map"]], col_names = c("tx_nam
 sf_files_srx <- unlist(snakemake@input[["quant_srx"]])
 #sf_files_srx <- Sys.glob("outputs/salmon/pa14/*/quant.sf")
 sf_files_spu <- unlist(snakemake@input[["quant_spu"]])
+sf_files <- c(sf_files_srx, sf_files_spu)
 
 sf <- sf_files %>%
   set_names() %>%                                                       # add filename as a column
   map_dfr(read_tsv, show_col_types = FALSE, .id = "sample") %>%         # read in files
-  mutate(srx = basename(dirname(sample))) %>%                           # edit filename to srx ID
+  mutate(sample = basename(dirname(sample))) %>%                           # edit filename to srx ID
   left_join(annotation_map, by = c("Name" = "tx_name")) %>%             # join to gene name
   select(sample, Name = Name.y, Length, EffectiveLength, TPM, NumReads) # drop transcript name
 
