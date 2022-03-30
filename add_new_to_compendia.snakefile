@@ -148,7 +148,7 @@ rule salmon_spu:
         logm = "outputs/salmon_spu/{strain}/{spu}/aux_info/meta_info.json",
     params: 
         indx_dir = lambda wildcards: "outputs/t_indxs/" + wildcards.strain + "_cdna_k15",
-        out_dir  = lambda wildcards: "outputs/salmon/" + wildcards.strain + "/" + wildcards.spu 
+        out_dir  = lambda wildcards: "outputs/salmon_spu/" + wildcards.strain + "/" + wildcards.spu 
     conda: "envs/salmon.yml"
     threads: 1
     resources:
@@ -169,7 +169,7 @@ rule multiqc_salmon_aux_files:
         expand("outputs/salmon_spu/{{strain}}/{spu}/aux_info/meta_info.json", spu = SPU)
     output: "outputs/multiqc/logs_{strain}_multiqc_report.html"
     params: 
-        indir = lambda wildcards: "outputs/salmon/" + wildcards.strain,
+        indir = lambda wildcards: "outputs/salmon*/" + wildcards.strain,
         outdir = "outputs/multiqc"
     conda: "envs/multiqc.yml"
     threads: 1
