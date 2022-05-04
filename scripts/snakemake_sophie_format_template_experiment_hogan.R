@@ -8,142 +8,115 @@ library(tibble)
 strain <- unlist(snakemake@wildcards[['strain']])
 
 # read in hogan lab sample counts
-#counts <- read_csv("outputs/combined_new/num_reads_pa14.csv")
+#counts <- read_csv("outputs/combined_new/num_reads_pao1.csv")
 counts <- read_csv(snakemake@input[['counts']], show_col_types = F)
 
 # read in hogan lab sample metadata
 #metadata <- read_csv("inputs/hogan_metadata.csv")
 metadata <- read_csv(snakemake@input[['metadata']], show_col_types = F)
 
-# read in compendium counts so that "control" counts can be extracted
-#compendium <- read_csv(snakemake@input[['compendium']], show_col_types = F) %>%
-compendium <- read_csv("inputs/original_compendia/num_reads_pao1_cdna_k15.csv", show_col_types = F) %>%
-  rename(tx_name = "...1") %>% # fix auto named col
-  select(-tx_name) %>%  # remove txname, as its not needed
-  rename_with(~ gsub("\\.salmon", "", basename(.x))) # edit colnames to exp accession
+# determine experiment that is being compared ----------------------------------
 
+# figure out what comparison should be formatted with this run by parsing the 
+# snakemake wildcard. Each "hogan_comparison" contains two experiments, separated
+# by "-vs-".
+comparison <- unlist(snakemake@wildcards[['hogan_comparison']])
+# comparison <- 'asm-vs-asm_m'
 
-# determine control set of samples and extract from compendium ------------
+# parse comparison to determine which two sample sets to place in template files
+set1 <- gsub("-.*", "", comparison)
+set2 <- gsub(".*-vs-", "", comparison)
 
-# control samples were selected based on the following criteria:
-# 1. same strain as compendium (i.e. either PAO1 or PA14)
-# 2. WT cells grown in LB medium
-# 3. Sequenced in biological triplicate
+# separate hogan lab samples into sets based on sample type --------------------
 
-if(strain == "pao1") {
-  # If PAO1, use WT from PRJNA613826 as controls for differential expression
-  controls <- c("SRX8487076", "SRX8487077", "SRX8487078")
-  # grab just the controls out of the compendium
-  compendium <- compendium %>%
-    select(Name, one_of(controls))
-} else {
-  # If PA14, use WT from PRJNA291596
-  # alternative experiments I considered were:
-  # 1. PRNA343895 (unclear if LB medium was used)
-  # 2. SRX4641857, SRX4641856 (sequenced in duplicate)
-  # 3. SRX8030428, SRX8030427, SRX8030426, SRX8030425 (SRX8030427 and SRX8030425 are tech reps)
-  controls <- c("SRX1127445", "SRX1127446", "SRX1127447")
-  # grab just the controls out of the compendium
-  compendium <- compendium %>%
-    select(Name, one_of(controls))
-}
-
-# separate hogan lab samples, metal nonmetals -----------------------------
-
-metal_samples <- metadata %>%
+spu_m_samples <- metadata %>%
   filter(metals == "metals") %>%
   filter(!grepl("ASM", x = sample))
 
-artificial_metal_samples <- metadata %>%
+asm_m_samples <- metadata %>%
   filter(metals == "metals") %>%
   filter(grepl("ASM", x = sample))
 
-nonmetal_samples <- metadata %>%
+spu_samples <- metadata %>%
   filter(metals == "no metals") %>%
   filter(!grepl("ASM", x = sample)) %>%
   filter(!grepl("^M", x = sample))
 
-artificial_nonmetal_samples <- metadata %>%
+asm_samples <- metadata %>%
   filter(metals == "no metals") %>%
   filter(grepl("ASM", x = sample))
 
-m_nonmetal_samples <- metadata %>%
+m63_samples <- metadata %>%
   filter(metals == "no metals") %>%
   filter(grepl("^M", x = sample))
 
-counts_metals <- counts %>%
-  select(Name, one_of(metal_samples$sample)) %>% # select Name and metal samples
-  left_join(compendium, by = "Name") %>% # join to compendium controls
-  column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
-  t()                                  # transpose
+# spu_m_counts <- counts %>%
+#   select(Name, one_of(metal_samples$sample)) %>% # select Name and metal samples
+#   left_join(compendium, by = "Name") %>% # join to compendium controls
+#   column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
+#   t()                                  # transpose
 
-counts_artificial_metals <- counts %>%
-  select(Name, one_of(artificial_metal_samples$sample)) %>% # select Name and metal samples
-  left_join(compendium, by = "Name") %>% # join to compendium controls
-  column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
-  t()                                  # transpose
+spu_m_counts <- counts %>% select(Name, one_of(spu_m_samples$sample)) 
 
-counts_nonmetals <- counts %>%
-  select(Name, one_of(nonmetal_samples$sample)) %>% # select Name and nonmetal samples
-  left_join(compendium, by = "Name") %>% # join to compendium controls
-  column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
-  t()                                  # transpose
+asm_m_counts <- counts %>% select(Name, one_of(asm_m_samples$sample)) # select Name and metal samples
 
-counts_artificial_nonmetals <- counts %>%
-  select(Name, one_of(artificial_nonmetal_samples$sample)) %>% # select Name and nonmetal samples
-  left_join(compendium, by = "Name") %>% # join to compendium controls
-  column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
-  t()                                  # transpose
+spu_counts <- counts %>% select(Name, one_of(spu_samples$sample)) # select Name and nonmetal samples
+  
+asm_counts <- counts %>% select(Name, one_of(asm_samples$sample)) # select Name and artificial samples
 
-counts_m_nonmetals <- counts %>%
-  select(Name, one_of(m_nonmetal_samples$sample)) %>% # select Name and nonmetal samples
-  left_join(compendium, by = "Name") %>% # join to compendium controls
-  column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
-  t()                                  # transpose
-
-# create metadata tables --------------------------------------------------
-
-# create a data frame to record the sample groupings, which will be used by 
-# sophie to perform differential expression analysis
-
-sophie_metadata_metals <- data.frame(sample = rownames(counts_metals)) %>%
-  mutate(group = ifelse(sample %in% controls, 1, 2))
-
-sophie_metadata_artificial_metals <- data.frame(sample = rownames(counts_artificial_metals)) %>%
-  mutate(group = ifelse(sample %in% controls, 1, 2))
-
-sophie_metadata_nonmetals <- data.frame(sample = rownames(counts_nonmetals)) %>%
-  mutate(group = ifelse(sample %in% controls, 1, 2))
-
-sophie_metadata_artificial_nonmetals <- data.frame(sample = rownames(counts_artificial_nonmetals)) %>%
-  mutate(group = ifelse(sample %in% controls, 1, 2))
-
-sophie_metadata_m_nonmetals <- data.frame(sample = rownames(counts_m_nonmetals)) %>%
-  mutate(group = ifelse(sample %in% controls, 1, 2))
+m63_counts <- counts %>% select(Name, one_of(m63_samples$sample)) # select Name and m63 samples
 
 
-# create ponyo metadata tables --------------------------------------------
+# create metadata and count tables with correct contrasts ----------------------
 
-# experiment_colname | sample_id_colname
-# pao1_hogan_metals | sample_id_0
-# pao1_hogan_metals | sample_id_1
-# pao1_hogan_metals | sample_id_2
-# pao1_hogan_metals | sample_id_3
+if(comparison == 'asm-vs-asm_m'){
+  counts_out <- left_join(asm_counts, asm_m_counts, by = "Name") %>% # join by gene name
+    column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
+    t()                                  # transpose
+  groups_out <- data.frame(sample = rownames(counts_out)) %>%
+    mutate(group = ifelse(sample %in% colnames(asm_counts), 1, 2))
+} else if(comparison == "spu-vs-spu_m"){
+  counts_out <- left_join(spu_counts, spu_m_counts, by = "Name") %>% # join by gene name
+    column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
+    t()                                  # transpose
+  groups_out <- data.frame(sample = rownames(counts_out)) %>%
+    mutate(group = ifelse(sample %in% colnames(spu_counts), 1, 2))
+} else if(comparison == "spu-vs-asm"){
+  counts_out <- left_join(spu_counts, asm_counts, by = "Name") %>% # join by gene name
+    column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
+    t()                                  # transpose
+  groups_out <- data.frame(sample = rownames(counts_out)) %>%
+    mutate(group = ifelse(sample %in% colnames(spu_counts), 1, 2))
+} else if(comparison == "spu-vs-m63"){
+  counts_out <- left_join(spu_counts, m63_counts, by = "Name") %>% # join by gene name
+    column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
+    t()                                  # transpose
+  groups_out <- data.frame(sample = rownames(counts_out)) %>%
+    mutate(group = ifelse(sample %in% colnames(spu_counts), 1, 2))
+} else if(comparison == "spu_m-vs-asm_m"){
+  counts_out <- left_join(spu_m_counts, asm_m_counts, by = "Name") %>% # join by gene name
+    column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
+    t()                                  # transpose
+  groups_out <- data.frame(sample = rownames(counts_out)) %>%
+    mutate(group = ifelse(sample %in% colnames(spu_m_counts), 1, 2))
 
-ponyo_metadata_metals <- data.frame(experiment_colname = "pao1_hogan_metals", 
-                                    sample_id_colname  = sophie_metadata_metals$sample)
-write_csv(ponyo_metadata_metals, snakemake@output[['ponyo_metals']])
+} else if(comparison == "asm-vs-m63"){
+  counts_out <- left_join(asm_counts, m63_counts, by = "Name") %>% # join by gene name
+    column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
+    t()                                  # transpose
+  groups_out <- data.frame(sample = rownames(counts_out)) %>%
+    mutate(group = ifelse(sample %in% colnames(asm_counts), 1, 2))
+}
+
+# ponyo_out depends on groups_out and the comparison, so it can be run outside
+# of the if/else statements.
+ponyo_out  <- data.frame(experiment_colname = paste0(strain, "_", comparison), 
+                         sample_id_colname  = groups_out$sample)
 # write results -----------------------------------------------------------
 
 # use base R write.table() to write counts so that rownames are written as an index
-write.table(counts_metals, snakemake@output[['metals']], quote = F, sep = "\t")
-write.table(counts_artificial_metals, snakemake@output[['artificial_metals']], quote = F, sep = "\t")
-write.table(counts_nonmetals, snakemake@output[['sputum']], quote = F, sep = "\t")
-write.table(counts_artificial_nonmetals, snakemake@output[['artificial_sputum']], quote = F, sep = "\t")
-write.table(counts_m_nonmetals, snakemake@output[['m_sputum']], quote = F, sep = "\t")
+write.table(counts_out, snakemake@output[['num-reads']], quote = F, sep = "\t")
 
-write_tsv(sophie_metadata_metals, snakemake@output[['meta_metals']])
-write_tsv(sophie_metadata_artificial_metals, snakemake@output[['meta_artificial_metals']])
-write_tsv(sophie_metadata_nonmetals, snakemake@output[['meta_sputum']])
-write_tsv(sophie_metadata_artificial_nonmetals, snakemake@output[['meta_artificial_sputum']])
-write_tsv(sophie_metadata_m_nonmetals, snakemake@output[['meta_m_sputum']])
+write_tsv(groups_out, snakemake@output[['groups']])
+
+write_csv(ponyo_out, snakemake@output[['ponyo']])

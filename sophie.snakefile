@@ -51,34 +51,22 @@ rule format_training_compendia:
     resources: mem_mb=6000
     script: "scripts/snakemake_sophie_format_training_compendium.R"
     
+hogan_comparisons = ['asm-vs-asm_m', 'spu-vs-spu_m', 'spu-vs-asm', 'spu-vs-m63', 'spu_m-vs-asm_m', 'asm-vs-m63']
 
 rule format_template_experiments_hogan:
     """
     This rule will require the outputs from the snakefile add_new_to_compendia.snakefile,
     which processes the hogan lab counts into a dataframe. The rule takes this dataframe of
-    counts and separates it into five template experiments:
-        1. sputum samples
-        2. sputum samples treated with metals
-        3. artificial sputum samples
-        4. artificial sputum samples treated with metals
-        5. "M" sputum samples (I don't know what these are so i separated them out)
+    counts and separates it into six template experiments, described by the
+    hogan_comparisons list.
     """
     input:
-        compendium="inputs/original_compendia/num_reads_{strain}_cdna_k15.csv",
         metadata="inputs/hogan_metadata.csv",
         counts="outputs/combined_new/num_reads_{strain}.csv"
     output:
-        sputum="outputs/sophie_template_experiments/{strain}_sputum_num_reads.tsv",
-        meta_sputum = "outputs/sophie_template_experiments/{strain}_sputum_groups.tsv",
-        metals="outputs/sophie_template_experiments/{strain}_metals_num_reads.tsv",
-        meta_metals = "outputs/sophie_template_experiments/{strain}_metals_groups.tsv",
-        ponyo_metals = "outputs/sophie_template_experiments/{strain}_metals_ponyo.csv",
-        artificial_sputum ="outputs/sophie_template_experiments/{strain}_sputum_artificial_num_reads.tsv",
-        meta_artificial_sputum =  "outputs/sophie_template_experiments/{strain}_sputum_artificial_groups.tsv",
-        artificial_metals = "outputs/sophie_template_experiments/{strain}_metals_artificial_num_reads.tsv",
-        meta_artificial_metals = "outputs/sophie_template_experiments/{strain}_metals_artificial_groups.tsv",
-        m_sputum = "outputs/sophie_template_experiments/{strain}_sputum_m_num_reads.tsv",
-        meta_m_sputum = "outputs/sophie_template_experiments/{strain}_sputum_m_groups.tsv",
+        num-reads="outputs/sophie_template_experiments/{strain}-{hogan_comparison}-num-reads.tsv",
+        groups="outputs/sophie_template_experiments/{strain}-{hogan_comparison}-groups.tsv",
+        ponyo="outputs/sophie_template_experiments/{strain}-{hogan_comparison}-ponyo.csv",
     conda: "envs/tidyverse.yml"
     threads: 1
     resources: mem_mb=6000
