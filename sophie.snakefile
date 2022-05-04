@@ -2,8 +2,8 @@ STRAIN = ["pa14", "pao1"]
 
 rule all:
     input: 
-        expand("outputs/sophie_training_compendia/{strain}_compendium.csv", strain = STRAIN),
-        expand("outputs/sophie_template_experiments/num_reads_{strain}_sputum.csv", strain = STRAIN)
+        expand("outputs/sophie_training_compendia/{strain}_compendium.tsv", strain = STRAIN),
+        expand("outputs/sophie_template_experiments/{strain}_sputum_num_reads.tsv", strain = STRAIN)
 
 rule download_pao1_raw_numreads_compendia:
     output: "inputs/original_compendia/num_reads_pao1_cdna_k15.csv"
@@ -43,11 +43,9 @@ rule download_experiment_metadata:
 rule format_training_compendia:
     input:
         compendium="inputs/original_compendia/num_reads_{strain}_cdna_k15.csv",
-        exp="inputs/original_compendia/SraRunTable.csv",
         strain="inputs/original_compendia/SRA_annotations.tsv"
     output: 
-        compendium="outputs/sophie_training_compendia/{strain}_compendium.csv",
-        exp="outputs/sophie_training_compendia/{strain}_metadata.csv"
+        compendium="outputs/sophie_training_compendia/{strain}_compendium.tsv",
     conda: "envs/tidyverse.yml"
     threads: 1
     resources: mem_mb=6000
@@ -58,15 +56,29 @@ rule format_template_experiments_hogan:
     """
     This rule will require the outputs from the snakefile add_new_to_compendia.snakefile,
     which processes the hogan lab counts into a dataframe. The rule takes this dataframe of
-    counts and separates it into two template experiments, one containing the sputum samples
-    and one containing the sputum samples treated with metals.
+    counts and separates it into five template experiments:
+        1. sputum samples
+        2. sputum samples treated with metals
+        3. artificial sputum samples
+        4. artificial sputum samples treated with metals
+        5. "M" sputum samples (I don't know what these are so i separated them out)
     """
     input:
+        compendium="inputs/original_compendia/num_reads_{strain}_cdna_k15.csv",
         metadata="inputs/hogan_metadata.csv",
         counts="outputs/combined_new/num_reads_{strain}.csv"
     output:
-        sputum="outputs/sophie_template_experiments/num_reads_{strain}_sputum.csv",
-        metals="outputs/sophie_template_experiments/num_reads_{strain}_metals.csv"
+        sputum="outputs/sophie_template_experiments/{strain}_sputum_num_reads.tsv",
+        meta_sputum = "outputs/sophie_template_experiments/{strain}_sputum_groups.tsv",
+        metals="outputs/sophie_template_experiments/{strain}_metals_num_reads.tsv",
+        meta_metals = "outputs/sophie_template_experiments/{strain}_metals_groups.tsv",
+        ponyo_metals = "outputs/sophie_template_experiments/{strain}_metals_ponyo.csv",
+        artificial_sputum ="outputs/sophie_template_experiments/{strain}_sputum_artificial_num_reads.tsv",
+        meta_artificial_sputum =  "outputs/sophie_template_experiments/{strain}_sputum_artificial_groups.tsv",
+        artificial_metals = "outputs/sophie_template_experiments/{strain}_metals_artificial_num_reads.tsv",
+        meta_artificial_metals = "outputs/sophie_template_experiments/{strain}_metals_artificial_groups.tsv",
+        m_sputum = "outputs/sophie_template_experiments/{strain}_sputum_m_num_reads.tsv",
+        meta_m_sputum = "outputs/sophie_template_experiments/{strain}_sputum_m_groups.tsv",
     conda: "envs/tidyverse.yml"
     threads: 1
     resources: mem_mb=6000
