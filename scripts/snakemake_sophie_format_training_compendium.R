@@ -16,7 +16,7 @@ strain_metadata <- read_tsv(snakemake@input[['strain']], show_col_types = F) %>%
 # strain_metadata <- read_tsv("inputs/original_compendia/SRA_annotations.tsv", show_col_types = F) %>%
   rename(experiment = Experiment, strain_type = "Strain type")
 
-compendium <- read_csv(snakemake@input[['compendium']], show_col_types = F) %>%
+compendium <- read_csv(snakemake@input[['raw_compendium']], show_col_types = F) %>%
 # compendium <- read_csv("inputs/original_compendia/num_reads_pa14_cdna_k15.csv", show_col_types = F) %>%
   rename(tx_name = "...1") %>% # fix auto named col
   select(-tx_name) %>%  # remove txname, as its not needed
@@ -36,4 +36,4 @@ compendium_subset <- compendium %>%
 
 # use base R write.csv() so rownames will be written w/o a colname, which I think
 # will play best with sophie/python
-write.table(compendium_subset, snakemake@output[['compendium']], quote = F, sep = "\t")
+write.table(compendium_subset, snakemake@output[['raw_compendium']], quote = F, sep = "\t")
