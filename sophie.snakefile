@@ -108,7 +108,6 @@ rule sophie_normalize_compendium:
     input:
         # still needed to control NN architecture
         config="",
-        # switched from sophie, which calls this the "processed_compendium_filename"
         raw_compendium_filename="outputs/sophie_training_compendia/{strain}_compendium.tsv"
     output:
         normalized_compendium_filename = "outputs/sophie/{strain}_{hogan_comparison}/data/normalized_compendium.tsv",
@@ -117,17 +116,7 @@ rule sophie_normalize_compendium:
     run:
         # set all seeds to get repeatable VAE models
         process.set_all_seeds()
-        # base_dir will already be in the correct location -- the wd of the snakefile
-        # base_dir = os.path.abspath(os.path.join(os.getcwd(), "../"))
-        # Read in config variables
-        #sophie_params = utils.read_config(input.config)
-        # Use config file to set params as vars
-        #dataset_name = sophie_params["dataset_name"]
-        #dataset_name = wildcards.strain + "_" + wildcards.hogan_comparison
-        #processed_compendium_filename = sophie_params["processed_compendium_filename"]
-        #normalized_compendium_filename = sophie_params["normalized_compendium_filename"]
-        #scaler_filename = sophie_params["scaler_filename"]
-        #NN_architecture = sophie_params["NN_architecture"]
+
         # Normalize the compendium (0-1)
         process.normalize_compendium(input.raw_compendium_filename, 
                                      output.normalized_compendium_filename, 
@@ -148,21 +137,6 @@ rule sophie_train_vae:
     run:
         # set all seeds to get repeatable VAE models
         process.set_all_seeds()
-        # base_dir = os.path.abspath(os.path.join(os.getcwd(), "../"))
-        # base_dir will be outputs/sophie
-        # Read in config variables
-        #sophie_params = utils.read_config(input.config)
-        # Use config file to set params as vars
-        #dataset_name = sophie_params["dataset_name"]
-        #dataset_name = wildcards.strain + "_" + wildcards.hogan_comparison
-        #normalized_compendium_filename = sophie_params["normalized_compendium_filename"]
-        #NN_architecture = sophie_params["NN_architecture"]
-        # Create VAE directories
-        # note snakemake will take care of this if output files are appropriately recorded
-        #output_dirs = [os.path.join(base_dir, dataset_name, “models”), os.path.join(base_dir, dataset_name, “logs”)]
-        #for each_dir in output_dirs:
-        #    sub_dir = os.path.join(each_dir, NN_architecture)
-        #    os.makedirs(sub_dir, exist_ok=True)
 
         # Train VAE on new compendium data
         # NEED TO UPDATE THIS WHEN I CAN CONTROL THE BASE_DIR PARAMETER
@@ -201,7 +175,7 @@ rule simulate_experiments_based_on_template_experiment:
         "outputs/sophie/{strain}_{hogan_comparison}/pseudo_experiment/selected_simulated_data_x_{run_id}.txt"
     run:
         sophie_params = utils.read_config(input.config)
-        vae_model_dir # EITHER SPECIFY AS A PARAM OR PARSE WILDCARDS TO SOLVE
+        vae_model_dir # PARSE WILDCARDS TO SOLVE, BC IT CONTAINS THE PROJECT ID
         latent_dim    # LATENT DIM IS A ENCODED AS A WILDCARD IN THE WORKFLOW...USE THAT?
 
         # simulate experiment based on template experiment
@@ -227,7 +201,6 @@ rule process_template_data:
         processed_template_filename = "outputs/sophie/{strain}_{hogan_comparison}/data/processed_template_compendium.tsv",
     run:
         sophie_params = utils.read_config(input.config)
-        num_simulated_runs = sophie_params['num_simulated_runs']
         method = sophie_params['DE_method']
         count_threshold = sophie_params['count_threshold']
 
@@ -257,7 +230,7 @@ rule process_simulated_data:
 
         if method == "deseq":
             stats.process_samples_for_DESeq(
-                simulated_filename,
+                input.simulated_filename,
                 grp_metadata_filename     = input.grp_metadata_filename
                 out_expression_filename   = output.out_simulated_filename,
                 count_threshold           = count_threshold,
@@ -324,7 +297,7 @@ rule rank_genes:
             tempate_stats_filename    = input.template_stats_filename,
             template_ranking_summary  = template_DE_stats,
             simulated_ranking_summary = simulated_DE_summary_stats,
-            col_to_rank               = rank_genes_by,
+            col_to_rank               = "logs2FoldChange", # replaces config "rank_genes_by"
             local_dir                 = "outputs/sophie/",
             pathway_or_gene           = "gene",
             params                    = sophie_params)
