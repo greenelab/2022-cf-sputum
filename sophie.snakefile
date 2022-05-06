@@ -23,6 +23,12 @@ from generic_expression_patterns_modules import process, stats, ranking, new_exp
 STRAIN = ["pa14", "pao1"]
 HOGAN_COMPARISONS = ['asm-vs-asm_m', 'spu-vs-spu_m', 'spu-vs-asm', 'spu-vs-m63', 'spu_m-vs-asm_m', 'asm-vs-m63']
 
+# constrain these wildcards so they solve properly
+wildcard_constraints:
+#    strain="pa..", # pa and then two characters
+#    hogan_comparison="...-vs-.*", # three characters, then -vs-, then any number of any characters
+    run_id = "\d+" # constrain to digits only
+
 # A few of the config-specified variables also need to be accessible as global variables in the snakefile.
 # They're used to name input/output files correctly.
 # I read them in below using sophie's config file reader.
@@ -30,13 +36,11 @@ HOGAN_COMPARISONS = ['asm-vs-asm_m', 'spu-vs-spu_m', 'spu-vs-asm', 'spu-vs-m63',
 sophie_params = utils.read_config("config/sophie_hogan_comparisons.tsv")
 NN_ARCHITECTURE    = sophie_params["NN_architecture"]
 LATENT_DIM         = sophie_params["latent_dim"]
-RUN_ID             = list(range(0, sophie_params["num_simulated_runs"]))
+RUN_IDS            = list(range(0, sophie_params["num_simulated_runs"]))
 
 rule all:
     input: 
-        expand("outputs/sophie_training_compendia/{strain}_compendium.tsv", strain = STRAIN),
-        expand("outputs/sophie_template_experiments/{strain}_sputum_num_reads.tsv", strain = STRAIN)
-        gene_summary_filename = "outputs/sophie/{strain}_{hogan_comparison}/generic_gene_summary.tsv"
+        expand("outputs/sophie/{strain}__{hogan_comparison}/generic_gene_summary.tsv", strain = STRAIN, hogan_comparison = HOGAN_COMPARISONS)
 
 ###################################################################
 ## Download existing data products and files
@@ -104,9 +108,9 @@ rule format_template_experiments_hogan:
         metadata="inputs/hogan_metadata.csv",
         counts="outputs/combined_new/num_reads_{strain}.csv"
     output:
-        num-reads="outputs/sophie_template_experiments/{strain}-{hogan_comparison}-num-reads.tsv",
-        groups="outputs/sophie_template_experiments/{strain}-{hogan_comparison}-groups.tsv",
-        ponyo="outputs/sophie_template_experiments/{strain}-{hogan_comparison}-ponyo.csv",
+        num_reads="outputs/sophie_template_experiments/{strain}__{hogan_comparison}_num_reads.tsv",
+        grps="outputs/sophie_template_experiments/{strain}__{hogan_comparison}_groups.tsv",
+        ponyo="outputs/sophie_template_experiments/{strain}__{hogan_comparison}_ponyo.csv"
     conda: "envs/tidyverse.yml"
     threads: 1
     resources: mem_mb=6000
@@ -140,9 +144,8 @@ rule sophie_normalize_compendium:
     input:
         raw_compendium_filename="outputs/sophie_training_compendia/{strain}_compendium.tsv"
     output:
-        normalized_compendium_filename = "outputs/sophie/{strain}_{hogan_comparison}/data/normalized_compendium.tsv",
-        scaler_filename = "outputs/sophie/{strain}_{hogan_comparison}/data/scaler_transform.pickle",
-    params: base_dir = "outputs/sophie"
+        normalized_compendium_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/normalized_compendium.tsv",
+        scaler_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/scaler_transform.pickle"
     run:
         # set all seeds to get repeatable VAE models
         process.set_all_seeds()
@@ -163,16 +166,16 @@ rule sophie_train_vae:
     input:
         # still needed to control NN architecture
         config="config/sophie_hogan_comparisons.tsv",
-        normalized_compendium_filename = "outputs/sophie/{strain}_{hogan_comparison}/data/normalized_compendium.tsv",
+        normalized_compendium_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/normalized_compendium.tsv",
     output:
-        m1 = "outputs/sophie/{strain}_{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}_decoder_model.h5",
-        m2 = "outputs/sophie/{strain}_{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}_decoder_model.h5",
-        m3 = "outputs/sophie/{strain}_{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}_decoder_model.h5",
-        m4 = "outputs/sophie/{strain}_{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}_decoder_model.h5",
-        hist = "outputs/sophie/{strain}_{hogan_comparison}/logs/{NN_architecture}/tybalt_2layer_{latent_dim}latent_hist.svg"
+        m1 = "outputs/sophie/{strain}__{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}_decoder_model.h5",
+        m2 = "outputs/sophie/{strain}__{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}_decoder_weights.h5",
+        m3 = "outputs/sophie/{strain}__{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}_encoder_model.h5",
+        m4 = "outputs/sophie/{strain}__{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}_encoder_weights.h5",
+        hist = "outputs/sophie/{strain}__{hogan_comparison}/logs/{NN_architecture}/tybalt_2layer_{latent_dim}latent_hist.svg"
     params: 
         base_dir = "outputs/sophie",
-        dataset_name = lambda wildcards: wildcards.strain + "_" + wildcards.hogan_comparison
+        dataset_name = lambda wildcards: wildcards.strain + "__" + wildcards.hogan_comparison
     run:
         # set all seeds to get repeatable VAE models
         process.set_all_seeds()
@@ -208,12 +211,12 @@ rule sophie_train_vae:
 
 rule normalized_template_experiment_data:
     input:
-        raw_template_filename = "outputs/sophie_template_experiments/{strain}_{hogan_comparison}-num-reads.tsv",
+        raw_template_filename = "outputs/sophie_template_experiments/{strain}__{hogan_comparison}_num_reads.tsv",
         raw_compendium_filename = "outputs/sophie_training_compendia/{strain}_compendium.tsv",
-        scaler_filename = "outputs/sophie/{strain}_{hogan_comparison}/data/scaler_transform.pickle"
+        scaler_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/scaler_transform.pickle"
     output:
-        mapped_template_filename = "outputs/sophie/{strain}_{hogan_comparison}/data/mapped_template_compendium.tsv",
-        normalized_template_filename = "outputs/sophie/{strain}_{hogan_comparison}/data/normalized_template_compendium.tsv"
+        mapped_template_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/mapped_template_compendium.tsv",
+        normalized_template_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/normalized_template_compendium.tsv"
     run:
         new_experiment_process.process_template_experiment(
             template_filename = input.raw_template_filename,
@@ -234,14 +237,14 @@ rule simulate_experiments_based_on_template_experiment:
     I think this is a fine design caveat, as only one model should be used for all of the experiments.
     '''
     input:
-        normalized_compendium_filename = "outputs/sophie/{strain}_{hogan_comparison}/data/normalized_compendium.tsv",
-        normalized_template_filename = "outputs/sophie/{strain}_{hogan_comparison}/data/normalized_template_compendium.tsv",
-        scaler_filename = "outputs/sophie/{strain}_{hogan_comparison}/data/scaler_transform.pickle",
+        normalized_compendium_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/normalized_compendium.tsv",
+        normalized_template_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/normalized_template_compendium.tsv",
+        scaler_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/scaler_transform.pickle",
         # more than one file is probably needed for the model, but just one is enough for the DAG to build appropriately.
-        m1 = expand("outputs/sophie/{{strain}}_{{hogan_comparison}}/models/{NN_architecture}/tybalt_2layer_{latent_dim}_decoder_model.h5", NN_architecture = NN_ARCHITECTURE, latent_dim = LATENT_DIM)
+        m1 = expand("outputs/sophie/{{strain}}__{{hogan_comparison}}/models/{NN_architecture}/tybalt_2layer_{latent_dim}_decoder_model.h5", NN_architecture = NN_ARCHITECTURE, latent_dim = LATENT_DIM)
     output:
-        "outputs/sophie/{strain}_{hogan_comparison}/pseudo_experiment/selected_simulated_data_x_{run_id}.txt"
-    params: vae_model_dir = lambda wildcards: "outputs/sophie/" + wildcards.strain + "_" + wildcards.hogan_comparison + "/models/" + wildcards.NN_architecture
+        "outputs/sophie/{strain}__{hogan_comparison}/pseudo_experiment/selected_simulated_data_x_{run_id}.txt"
+    params: vae_model_dir = lambda wildcards: "outputs/sophie/" + wildcards.strain + "__" + wildcards.hogan_comparison + "/models/" + wildcards.NN_architecture
     run:
         # simulate experiment based on template experiment
         normalized_compendium_df = pd.read_csv(input.normalized_compendium_filename, sep="\t", index_col=0, header=0)
@@ -253,7 +256,7 @@ rule simulate_experiments_based_on_template_experiment:
             vae_model_dir = params.vae_model_dir,
             selected_experiment_id = "x", # project_id is already recorded in output file path, put this to something random
             scaler_filename = input.scaler_filename,
-            local_dir = "outputs/sophie/" + wildcards.strain + "_" + wildcards.hogan_comparison, # changed meaning of local dir so output files go where I want them to, not in the current working directory. Otherwise they would all go in the same "pseudo_experiment" directory. 
+            local_dir = "outputs/sophie/" + wildcards.strain + "__" + wildcards.hogan_comparison, # changed meaning of local dir so output files go where I want them to, not in the current working directory. Otherwise they would all go in the same "pseudo_experiment" directory. 
             latent_dim = wildcards.latent_dim,
             run = wildcards.run_id)
 
@@ -261,10 +264,10 @@ rule simulate_experiments_based_on_template_experiment:
 rule process_template_data:
     input:
         config = "config/sophie_hogan_comparisons.tsv",
-        raw_template_filename = "outputs/sophie_template_experiments/{strain}_{hogan_comparison}-num-reads.tsv",
-        grp_metadata_filename = "outputs/sophie_template_experiments/{strain}-{hogan_comparison}-groups.tsv",
+        raw_template_filename = "outputs/sophie_template_experiments/{strain}__{hogan_comparison}_num_reads.tsv",
+        grp_metadata_filename = "outputs/sophie_template_experiments/{strain}__{hogan_comparison}_groups.tsv",
     output:
-        processed_template_filename = "outputs/sophie/{strain}_{hogan_comparison}/data/processed_template_compendium.tsv",
+        processed_template_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/processed_template_compendium.tsv",
     run:
         sophie_params = utils.read_config(input.config)
         method = sophie_params['DE_method']
@@ -285,10 +288,10 @@ rule process_simulated_data:
     multiple times, once for each num_simulated_runs
     '''
     input:
-        grp_metadata_filename = "outputs/sophie_template_experiments/{strain}-{hogan_comparison}-groups.tsv",
-        simulated_filename =  "outputs/sophie/{strain}_{hogan_comparison}/pseudo_experiment/selected_simulated_data_x_{run_id}.txt"
+        grp_metadata_filename = "outputs/sophie_template_experiments/{strain}__{hogan_comparison}_groups.tsv",
+        simulated_filename =  "outputs/sophie/{strain}__{hogan_comparison}/pseudo_experiment/selected_simulated_data_x_{run_id}.txt"
     output:
-        out_simulated_filename =  "outputs/sophie/{strain}_{hogan_comparison}/pseudo_experiment/selected_simulated_data_x_{run_id}_processed.txt"
+        out_simulated_filename =  "outputs/sophie/{strain}__{hogan_comparison}/pseudo_experiment/selected_simulated_data_x_{run_id}_processed.txt"
     run:
         sophie_params = utils.read_config(input.config)
         method = sophie_params['DE_method']
@@ -297,7 +300,7 @@ rule process_simulated_data:
         if method == "deseq":
             stats.process_samples_for_DESeq(
                 input.simulated_filename,
-                grp_metadata_filename     = input.grp_metadata_filename
+                grp_metadata_filename     = input.grp_metadata_filename,
                 out_expression_filename   = output.out_simulated_filename,
                 count_threshold           = count_threshold,
                 process_metadata_filename = None)
@@ -315,24 +318,24 @@ rule get_DE_stats_real_data:
     sophie scripts.
     '''
     input:
-        grp_metadata_filename = "outputs/sophie_template_experiments/{strain}-{hogan_comparison}-groups.tsv",
+        grp_metadata_filename = "outputs/sophie_template_experiments/{strain}__{hogan_comparison}_groups.tsv",
         # processed_template_filename:
-        data_filename = "outputs/sophie/{strain}_{hogan_comparison}/data/processed_template_compendium.tsv"
+        data_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/processed_template_compendium.tsv"
     output:
-        de_stats = "outputs/sophie/DE_stats/DE_stats_template_data_{strain}_{hogan_comparison}_real.txt"
+        de_stats = "outputs/sophie/DE_stats/DE_stats_template_data_{strain}__{hogan_comparison}_real.txt"
     params:
-        data_type = "template"
+        data_type = "template",
         run_id    = "real"
     conda: "envs/diffex.yml"
     script: "scripts/snakefile_sophie_get_stats_DESeq.R"
 
 rule get_DE_stats_simulated_data:
     input:
-        grp_metadata_filename = "outputs/sophie_template_experiments/{strain}-{hogan_comparison}-groups.tsv",
+        grp_metadata_filename = "outputs/sophie_template_experiments/{strain}__{hogan_comparison}_groups.tsv",
         # simulated_data_filename:
-        data_filename = "outputs/sophie/{strain}_{hogan_comparison}/pseudo_experiment/selected_simulated_data_x_{run_id}_processed.txt" 
+        data_filename = "outputs/sophie/{strain}__{hogan_comparison}/pseudo_experiment/selected_simulated_data_x_{run_id}_processed.txt" 
     output:
-        de_stats = "outputs/sophie/DE_stats/DE_stats_simulated_data_{strain}_{hogan_comparison}_{run_id}.txt"
+        de_stats = "outputs/sophie/DE_stats/DE_stats_simulated_data_{strain}__{hogan_comparison}_{run_id}.txt"
     params:
         data_type = "simulated",
         run_id = lambda wildcards: wildcards.run_id # can't be accessed directly in snakemake as wildcard because same script is used above, where there is no wildcard for the run_id value.
@@ -342,10 +345,10 @@ rule get_DE_stats_simulated_data:
 rule rank_genes:
     input:
         config = "config/sophie_hogan_comparisons.tsv",
-        template_stats_filename = "outputs/sophie/DE_stats/DE_stats_template_data_{strain}_{hogan_comparison}_real.txt",
-        simulated_stats_filenames = expand("outputs/sophie/DE_stats/DE_stats_simulated_data_{{strain}}_{{hogan_comparison}}_{run_id}.txt", run_id = RUN_IDS)
+        template_stats_filename = "outputs/sophie/DE_stats/DE_stats_template_data_{strain}__{hogan_comparison}_real.txt",
+        simulated_stats_filenames = expand("outputs/sophie/DE_stats/DE_stats_simulated_data_{{strain}}__{{hogan_comparison}}_{run_id}.txt", run_id = RUN_IDS)
     output:
-        gene_summary_filename = "outputs/sophie/{strain}_{hogan_comparison}/generic_gene_summary.tsv"
+        gene_summary_filename = "outputs/sophie/{strain}__{hogan_comparison}/generic_gene_summary.tsv"
     run:
         sophie_params = utils.read_config(input.config)
 
@@ -353,7 +356,7 @@ rule rank_genes:
             template_stats_filename   = input.template_stats_filename,
             local_dir                 = "outputs/sophie/",
             num_simulated_experiments = num_simulated_runs , # NOT DEFINED ANYWHERE YET
-            project_id                = wildcards.strain + "_" + wilcards.hogan_comparison,
+            project_id                = wildcards.strain + "__" + wilcards.hogan_comparison,
             analysis_type             = "DE",
             col_to_rank_by            = sophie_params["rank_genes_by"],
             logFC_name                = sophie_params["DE_logFC_name"], 
