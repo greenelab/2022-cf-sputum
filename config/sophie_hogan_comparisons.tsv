@@ -2,7 +2,7 @@ local_dir	"outputs/sophie"
 latent_dim	300
 num_simulated_runs	25
 DE_method	"deseq"
-count_threshold	"None"
+count_threshold	None
 rank_genes_by	"log2FoldChange"
 DE_logFC_name	"log2FoldChange"
 DE_pvalue_name	"padj"

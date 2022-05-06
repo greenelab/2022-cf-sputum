@@ -168,10 +168,10 @@ rule sophie_train_vae:
         config="config/sophie_hogan_comparisons.tsv",
         normalized_compendium_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/normalized_compendium.tsv",
     output:
-        m1 = "outputs/sophie/{strain}__{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}_decoder_model.h5",
-        m2 = "outputs/sophie/{strain}__{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}_decoder_weights.h5",
-        m3 = "outputs/sophie/{strain}__{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}_encoder_model.h5",
-        m4 = "outputs/sophie/{strain}__{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}_encoder_weights.h5",
+        m1 = "outputs/sophie/{strain}__{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_decoder_model.h5",
+        m2 = "outputs/sophie/{strain}__{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_decoder_weights.h5",
+        m3 = "outputs/sophie/{strain}__{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_encoder_model.h5",
+        m4 = "outputs/sophie/{strain}__{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_encoder_weights.h5",
         hist = "outputs/sophie/{strain}__{hogan_comparison}/logs/{NN_architecture}/tybalt_2layer_{latent_dim}latent_hist.svg"
     params: 
         base_dir = "outputs/sophie",
@@ -179,6 +179,8 @@ rule sophie_train_vae:
     run:
         # set all seeds to get repeatable VAE models
         process.set_all_seeds()
+        
+        from ponyo import vae
         
         def train_vae(config_filename, base_dir, dataset_name, input_data_filename):
             # Read in config variables, used to train the VAE
@@ -203,10 +205,10 @@ rule sophie_train_vae:
                 sophie_params["validation_frac"])
 
         # Train VAE on new compendium data
-        train_vae_modules.train_vae(config_filename = input.config, 
-                                    base_dir = params.base_dir,
-                                    dataset_name = params.dataset_name,
-                                    input_data_filename = output.normalized_compendium_filename) 
+        train_vae(config_filename = input.config, 
+                  base_dir = params.base_dir,
+                  dataset_name = params.dataset_name,
+                  input_data_filename = input.normalized_compendium_filename) 
 
 
 rule normalized_template_experiment_data:
@@ -241,7 +243,7 @@ rule simulate_experiments_based_on_template_experiment:
         normalized_template_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/normalized_template_compendium.tsv",
         scaler_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/scaler_transform.pickle",
         # more than one file is probably needed for the model, but just one is enough for the DAG to build appropriately.
-        m1 = expand("outputs/sophie/{{strain}}__{{hogan_comparison}}/models/{NN_architecture}/tybalt_2layer_{latent_dim}_decoder_model.h5", NN_architecture = NN_ARCHITECTURE, latent_dim = LATENT_DIM)
+        m1 = expand("outputs/sophie/{{strain}}__{{hogan_comparison}}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_decoder_model.h5", NN_architecture = NN_ARCHITECTURE, latent_dim = LATENT_DIM)
     output:
         "outputs/sophie/{strain}__{hogan_comparison}/pseudo_experiment/selected_simulated_data_x_{run_id}.txt"
     params: vae_model_dir = lambda wildcards: "outputs/sophie/" + wildcards.strain + "__" + wildcards.hogan_comparison + "/models/" + wildcards.NN_architecture

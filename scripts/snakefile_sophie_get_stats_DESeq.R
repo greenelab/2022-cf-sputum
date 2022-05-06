@@ -24,11 +24,16 @@ get_DE_stats_DESeq <- function(grp_metadata_file,
   #   Used as identifier for different simulated experiments
   
   expression_data <- t(read.csv(expression_file, sep="\t", header=TRUE, row.names=1))
-  metadata <- read.csv(metadata_file, sep="\t", header=TRUE)
+  metadata <- read.csv(grp_metadata_file, sep="\t", header=TRUE)
   
   print("Checking sample ordering...")
-  print(all.equal(colnames(expression_data), rownames(metadata)))
-  
+  print(all.equal(colnames(expression_data), metadata$sample))
+  # re order metadata table if it doesn't match to expression_data
+  if(!(all.equal(colnames(expression_data), metadata$sample))) {
+    print("reordering samples...")
+    metadata <- metadata[order(match(metadata$sample, colnames(expression_data))), ]
+  }
+ 
   metadata$group <- as.factor(metadata$group)
   ddset <- DESeqDataSetFromMatrix(expression_data, colData=metadata, design = ~group)
   
