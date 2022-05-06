@@ -115,8 +115,8 @@ ponyo_out  <- data.frame(experiment_colname = paste0(strain, "_", comparison),
 # write results -----------------------------------------------------------
 
 # use base R write.table() to write counts so that rownames are written as an index
-write.table(counts_out, snakemake@output[['num-reads']], quote = F, sep = "\t")
+write.table(counts_out, snakemake@output[['num_reads']], quote = F, sep = "\t")
 
-write_tsv(groups_out, snakemake@output[['groups']])
+write_tsv(groups_out, snakemake@output[['grps']])
 
 write_csv(ponyo_out, snakemake@output[['ponyo']])
