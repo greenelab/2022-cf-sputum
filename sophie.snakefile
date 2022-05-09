@@ -239,6 +239,7 @@ rule simulate_experiments_based_on_template_experiment:
     I think this is a fine design caveat, as only one model should be used for all of the experiments.
     '''
     input:
+        config = "config/sophie_hogan_comparisons.tsv",
         normalized_compendium_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/normalized_compendium.tsv",
         normalized_template_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/normalized_template_compendium.tsv",
         scaler_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/scaler_transform.pickle",
@@ -246,22 +247,22 @@ rule simulate_experiments_based_on_template_experiment:
         m1 = expand("outputs/sophie/{{strain}}__{{hogan_comparison}}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_decoder_model.h5", NN_architecture = NN_ARCHITECTURE, latent_dim = LATENT_DIM)
     output:
         "outputs/sophie/{strain}__{hogan_comparison}/pseudo_experiment/selected_simulated_data_x_{run_id}.txt"
-    params: vae_model_dir = lambda wildcards: "outputs/sophie/" + wildcards.strain + "__" + wildcards.hogan_comparison + "/models/" + wildcards.NN_architecture
     run:
+        sophie_params = utils.read_config(input.config)
+        vae_model_dir = "outputs/sophie/" + wildcards.strain + "__" + wildcards.hogan_comparison + "/models/" + sophie_params["NN_architecture"]
         # simulate experiment based on template experiment
         normalized_compendium_df = pd.read_csv(input.normalized_compendium_filename, sep="\t", index_col=0, header=0)
         normalized_template_df = pd.read_csv(input.normalized_template_filename, sep="\t", index_col=0, header=0)
 
         new_experiment_process.embed_shift_template_experiment(
-            normalized_data = normalized_compendium_df,
-            template_experiment = normalized_template_df,
-            vae_model_dir = params.vae_model_dir,
+            normalized_data        = normalized_compendium_df,
+            template_experiment    = normalized_template_df,
+            vae_model_dir          = vae_model_dir,
             selected_experiment_id = "x", # project_id is already recorded in output file path, put this to something random
-            scaler_filename = input.scaler_filename,
-            local_dir = "outputs/sophie/" + wildcards.strain + "__" + wildcards.hogan_comparison, # changed meaning of local dir so output files go where I want them to, not in the current working directory. Otherwise they would all go in the same "pseudo_experiment" directory. 
-            latent_dim = wildcards.latent_dim,
-            run = wildcards.run_id)
-
+            scaler_filename        = input.scaler_filename,
+            local_dir              = "outputs/sophie/" + wildcards.strain + "__" + wildcards.hogan_comparison, # changed meaning of local dir so output files go where I want them to, not in the current working directory. Otherwise they would all go in the same "pseudo_experiment" directory. 
+            latent_dim             = sophie_params["latent_dim"],
+            run                    = wildcards.run_id)
 
 rule process_template_data:
     input:
@@ -290,6 +291,7 @@ rule process_simulated_data:
     multiple times, once for each num_simulated_runs
     '''
     input:
+        config = "config/sophie_hogan_comparisons.tsv",
         grp_metadata_filename = "outputs/sophie_template_experiments/{strain}__{hogan_comparison}_groups.tsv",
         simulated_filename =  "outputs/sophie/{strain}__{hogan_comparison}/pseudo_experiment/selected_simulated_data_x_{run_id}.txt"
     output:
@@ -353,19 +355,19 @@ rule rank_genes:
         gene_summary_filename = "outputs/sophie/{strain}__{hogan_comparison}/generic_gene_summary.tsv"
     run:
         sophie_params = utils.read_config(input.config)
-
+        
         template_DE_stats, simulated_DE_summary_stats = ranking.process_and_rank_genes_pathways(
             template_stats_filename   = input.template_stats_filename,
             local_dir                 = "outputs/sophie/",
-            num_simulated_experiments = num_simulated_runs , # NOT DEFINED ANYWHERE YET
-            project_id                = wildcards.strain + "__" + wilcards.hogan_comparison,
+            num_simulated_experiments = sophie_params["num_simulated_runs"],
+            project_id                = wildcards.strain + "__" + wildcards.hogan_comparison,
             analysis_type             = "DE",
             col_to_rank_by            = sophie_params["rank_genes_by"],
             logFC_name                = sophie_params["DE_logFC_name"], 
             pvalue_name               = sophie_params["DE_pvalue_name"])
 
         summary_gene_ranks = ranking.generate_summary_table(
-            tempate_stats_filename    = input.template_stats_filename,
+            template_stats_filename    = input.template_stats_filename,
             template_ranking_summary  = template_DE_stats,
             simulated_ranking_summary = simulated_DE_summary_stats,
             col_to_rank               = sophie_params["rank_genes_by"],
