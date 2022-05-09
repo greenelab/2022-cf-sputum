@@ -215,7 +215,7 @@ rule normalized_template_experiment_data:
     input:
         raw_template_filename = "outputs/sophie_template_experiments/{strain}__{hogan_comparison}_num_reads.tsv",
         raw_compendium_filename = "outputs/sophie_training_compendia/{strain}_compendium.tsv",
-        scaler_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/scaler_transform.pickle"
+        scaler_filename = "outputs/sophie/NN_models/{strain}/data/scaler_transform.pickle"
     output:
         mapped_template_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/mapped_template_compendium.tsv",
         normalized_template_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/normalized_template_compendium.tsv"
@@ -242,7 +242,7 @@ rule simulate_experiments_based_on_template_experiment:
         config = "config/sophie_hogan_comparisons.tsv",
         normalized_compendium_filename = "outputs/sophie/NN_models/{strain}/data/normalized_compendium.tsv",
         normalized_template_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/normalized_template_compendium.tsv",
-        scaler_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/scaler_transform.pickle",
+        scaler_filename = "outputs/sophie/NN_models/{strain}/data/scaler_transform.pickle",
         # more than one file is probably needed for the model, but just one is enough for the DAG to build appropriately.
         m1 = expand("outputs/sophie/NN_models/{{strain}}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_decoder_model.h5", NN_architecture = NN_ARCHITECTURE, latent_dim = LATENT_DIM)
     output:
