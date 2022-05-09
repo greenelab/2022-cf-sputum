@@ -144,8 +144,8 @@ rule sophie_normalize_compendium:
     input:
         raw_compendium_filename="outputs/sophie_training_compendia/{strain}_compendium.tsv"
     output:
-        normalized_compendium_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/normalized_compendium.tsv",
-        scaler_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/scaler_transform.pickle"
+        normalized_compendium_filename = "outputs/sophie/NN_models/{strain}/data/normalized_compendium.tsv",
+        scaler_filename = "outputs/sophie/NN_models/{strain}/data/scaler_transform.pickle"
     run:
         # set all seeds to get repeatable VAE models
         process.set_all_seeds()
@@ -166,16 +166,16 @@ rule sophie_train_vae:
     input:
         # still needed to control NN architecture
         config="config/sophie_hogan_comparisons.tsv",
-        normalized_compendium_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/normalized_compendium.tsv",
+        normalized_compendium_filename = "outputs/sophie/NN_models/{strain}/data/normalized_compendium.tsv",
     output:
-        m1 = "outputs/sophie/{strain}__{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_decoder_model.h5",
-        m2 = "outputs/sophie/{strain}__{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_decoder_weights.h5",
-        m3 = "outputs/sophie/{strain}__{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_encoder_model.h5",
-        m4 = "outputs/sophie/{strain}__{hogan_comparison}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_encoder_weights.h5",
-        hist = "outputs/sophie/{strain}__{hogan_comparison}/logs/{NN_architecture}/tybalt_2layer_{latent_dim}latent_hist.svg"
+        m1 = "outputs/sophie/NN_models/{strain}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_decoder_model.h5",
+        m2 = "outputs/sophie/NN_models/{strain}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_decoder_weights.h5",
+        m3 = "outputs/sophie/NN_models/{strain}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_encoder_model.h5",
+        m4 = "outputs/sophie/NN_models/{strain}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_encoder_weights.h5",
+        hist = "outputs/sophie/NN_models/{strain}/logs/{NN_architecture}/tybalt_2layer_{latent_dim}latent_hist.svg"
     params: 
-        base_dir = "outputs/sophie",
-        dataset_name = lambda wildcards: wildcards.strain + "__" + wildcards.hogan_comparison
+        base_dir = "outputs/sophie/NN_models",
+        dataset_name = lambda wildcards: wildcards.strain
     run:
         # set all seeds to get repeatable VAE models
         process.set_all_seeds()
@@ -240,16 +240,16 @@ rule simulate_experiments_based_on_template_experiment:
     '''
     input:
         config = "config/sophie_hogan_comparisons.tsv",
-        normalized_compendium_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/normalized_compendium.tsv",
+        normalized_compendium_filename = "outputs/sophie/NN_models/{strain}/data/normalized_compendium.tsv",
         normalized_template_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/normalized_template_compendium.tsv",
         scaler_filename = "outputs/sophie/{strain}__{hogan_comparison}/data/scaler_transform.pickle",
         # more than one file is probably needed for the model, but just one is enough for the DAG to build appropriately.
-        m1 = expand("outputs/sophie/{{strain}}__{{hogan_comparison}}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_decoder_model.h5", NN_architecture = NN_ARCHITECTURE, latent_dim = LATENT_DIM)
+        m1 = expand("outputs/sophie/NN_models/{{strain}}/models/{NN_architecture}/tybalt_2layer_{latent_dim}latent_decoder_model.h5", NN_architecture = NN_ARCHITECTURE, latent_dim = LATENT_DIM)
     output:
         "outputs/sophie/{strain}__{hogan_comparison}/pseudo_experiment/selected_simulated_data_x_{run_id}.txt"
     run:
         sophie_params = utils.read_config(input.config)
-        vae_model_dir = "outputs/sophie/" + wildcards.strain + "__" + wildcards.hogan_comparison + "/models/" + sophie_params["NN_architecture"]
+        vae_model_dir = "outputs/sophie/NN_models/" + wildcards.strain + "/models/" + sophie_params["NN_architecture"]
         # simulate experiment based on template experiment
         normalized_compendium_df = pd.read_csv(input.normalized_compendium_filename, sep="\t", index_col=0, header=0)
         normalized_template_df = pd.read_csv(input.normalized_template_filename, sep="\t", index_col=0, header=0)
