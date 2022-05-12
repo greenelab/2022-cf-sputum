@@ -13,4 +13,4 @@ kappa	.01
 intermediate_dim	2500
 epsilon_std	1.0
 epochs	100
-validation_frac	.25
+validation_frac	.2
