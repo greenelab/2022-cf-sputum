@@ -50,12 +50,6 @@ m63_samples <- metadata %>%
   filter(metals == "no metals") %>%
   filter(grepl("^M", x = sample))
 
-# spu_m_counts <- counts %>%
-#   select(Name, one_of(metal_samples$sample)) %>% # select Name and metal samples
-#   left_join(compendium, by = "Name") %>% # join to compendium controls
-#   column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
-#   t()                                  # transpose
-
 spu_m_counts <- counts %>% select(Name, one_of(spu_m_samples$sample)) 
 
 asm_m_counts <- counts %>% select(Name, one_of(asm_m_samples$sample)) # select Name and metal samples
