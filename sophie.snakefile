@@ -158,7 +158,7 @@ rule sophie_normalize_compendium:
 #       It currently has an internal base_dir parameter that is controlled by the config file but otherwise not exposed to the user. 
 #       This breaks my ability to automate it, as the base_dir is one level above the absolute path of the current working directory,
 #       which in this case would be outside of the github directory. 
-#       I've reproduced the function below, changing the base_dir sepcification, for now until this is changed in ponyo.
+#       I've reproduced the function below, changing the base_dir specification, for now until this is changed in ponyo.
 #       original script: https://github.com/greenelab/ponyo/blob/master/ponyo/train_vae_modules.py#L114
 #       issue: https://github.com/greenelab/ponyo/issues/43
 rule sophie_train_vae:
