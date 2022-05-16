@@ -63,42 +63,32 @@ m63_counts <- counts %>% select(Name, one_of(m63_samples$sample)) # select Name 
 
 # create metadata and count tables with correct contrasts ----------------------
 
+create_count_and_group_metadata <- function(counts1, counts2){
+  # function that takes in two counts dfs, joins them into a single counts df, 
+  # and uses sample names from the first counts dataframe to generate a groups dataframe. 
+  # The groups dataframe is used by sophie/DESeq2 to perform differential expression analysis.
+  # The samples in the first dataframe will be labelled as "1", 
+  # and the samples in the second dataframe will be labelled as "2".
+  counts_out <- left_join(counts1, counts2, by = "Name") %>% # join by gene name
+    column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
+    t()                                  # transpose
+  groups_out <- data.frame(sample = rownames(counts_out)) %>%
+    mutate(group = ifelse(sample %in% colnames(counts1), 1, 2))
+  return(list(counts = counts_out, groups = groups_out))
+}
+
 if(comparison == 'asm-vs-asm_m'){
-  counts_out <- left_join(asm_counts, asm_m_counts, by = "Name") %>% # join by gene name
-    column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
-    t()                                  # transpose
-  groups_out <- data.frame(sample = rownames(counts_out)) %>%
-    mutate(group = ifelse(sample %in% colnames(asm_counts), 1, 2))
+  out <- create_count_and_group_metadata(asm_counts, asm_m_counts)
 } else if(comparison == "spu-vs-spu_m"){
-  counts_out <- left_join(spu_counts, spu_m_counts, by = "Name") %>% # join by gene name
-    column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
-    t()                                  # transpose
-  groups_out <- data.frame(sample = rownames(counts_out)) %>%
-    mutate(group = ifelse(sample %in% colnames(spu_counts), 1, 2))
+  out <- create_count_and_group_metadata(spu_counts, spu_m_counts)
 } else if(comparison == "spu-vs-asm"){
-  counts_out <- left_join(spu_counts, asm_counts, by = "Name") %>% # join by gene name
-    column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
-    t()                                  # transpose
-  groups_out <- data.frame(sample = rownames(counts_out)) %>%
-    mutate(group = ifelse(sample %in% colnames(spu_counts), 1, 2))
+  out <- create_count_and_group_metadata(spu_counts, asm_counts)
 } else if(comparison == "spu-vs-m63"){
-  counts_out <- left_join(spu_counts, m63_counts, by = "Name") %>% # join by gene name
-    column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
-    t()                                  # transpose
-  groups_out <- data.frame(sample = rownames(counts_out)) %>%
-    mutate(group = ifelse(sample %in% colnames(spu_counts), 1, 2))
+  out <- create_count_and_group_metadata(spu_counts, m63_counts)
 } else if(comparison == "spu_m-vs-asm_m"){
-  counts_out <- left_join(spu_m_counts, asm_m_counts, by = "Name") %>% # join by gene name
-    column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
-    t()                                  # transpose
-  groups_out <- data.frame(sample = rownames(counts_out)) %>%
-    mutate(group = ifelse(sample %in% colnames(spu_m_counts), 1, 2))
+  out <- create_count_and_group_metadata(spu_m_counts, asm_m_counts)
 } else if(comparison == "asm-vs-m63"){
-  counts_out <- left_join(asm_counts, m63_counts, by = "Name") %>% # join by gene name
-    column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
-    t()                                  # transpose
-  groups_out <- data.frame(sample = rownames(counts_out)) %>%
-    mutate(group = ifelse(sample %in% colnames(asm_counts), 1, 2))
+  out <- create_count_and_group_metadata(asm_counts, m63_counts)
 }
 
 # ponyo_out depends on groups_out and the comparison, so it can be run outside
@@ -108,8 +98,8 @@ ponyo_out  <- data.frame(experiment_colname = paste0(strain, "_", comparison),
 # write results -----------------------------------------------------------
 
 # use base R write.table() to write counts so that rownames are written as an index
-write.table(counts_out, snakemake@output[['num_reads']], quote = F, sep = "\t")
+write.table(out$counts, snakemake@output[['num_reads']], quote = F, sep = "\t")
 
-write_tsv(groups_out, snakemake@output[['grps']])
+write_tsv(out$groups, snakemake@output[['grps']])
 
 write_csv(ponyo_out, snakemake@output[['ponyo']])
