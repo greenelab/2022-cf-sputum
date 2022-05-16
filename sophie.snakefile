@@ -12,7 +12,6 @@ matplotlib.use('TkAgg')
 import pandas as pd
 import numpy as np
 import scipy.stats as ss
-# import seaborn as sns # I don't think I use seaborn, but one of the dependencies might. Comment for now and remove if no errors.
 from sklearn import preprocessing
 from keras.models import load_model
 from ponyo import utils, train_vae_modules, simulate_expression_data
