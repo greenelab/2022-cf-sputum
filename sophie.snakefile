@@ -123,7 +123,7 @@ rule format_template_experiments_other_sputum:
     based on the study they were generated in. Produces 5 total template experiments.
     """
 
-rule formate_template_experiments_clinical_isolates:
+rule format_template_experiments_clinical_isolates:
     """
     SRA experiments (SRX) that are from clinical isolates are annotated in
     the SRA_annotations.tsv file. Use these annotations, combined with
