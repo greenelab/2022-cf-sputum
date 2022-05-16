@@ -99,7 +99,6 @@ if(comparison == 'asm-vs-asm_m'){
     t()                                  # transpose
   groups_out <- data.frame(sample = rownames(counts_out)) %>%
     mutate(group = ifelse(sample %in% colnames(spu_m_counts), 1, 2))
-
 } else if(comparison == "asm-vs-m63"){
   counts_out <- left_join(asm_counts, m63_counts, by = "Name") %>% # join by gene name
     column_to_rownames("Name") %>%       # put gene name as rowname, so it will become colname
