@@ -1,0 +1,16 @@
+local_dir	"outputs/sophie"
+latent_dim	300
+num_simulated_runs	25
+DE_method	"deseq"
+count_threshold	None
+rank_genes_by	"log2FoldChange"
+DE_logFC_name	"log2FoldChange"
+DE_pvalue_name	"padj"
+NN_architecture	"NN_2500_300"
+learning_rate	0.0001
+batch_size	40
+kappa	.01
+intermediate_dim	2500
+epsilon_std	1.0
+epochs	100
+validation_frac	.2

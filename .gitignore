@@ -1,0 +1,10 @@
+.DS_Store
+.snakemake
+*.swp
+*/.DS_Store
+inputs/raw
+inputs/transcriptomes/
+notebooks/.ipynb_checkpoints/
+inputs/original_compendia/
+benchmarks
+inputs/sourmash_dbs
