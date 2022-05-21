@@ -136,9 +136,19 @@ all.equal(colnames(rnaseq_pao1_tpm_log), names(seq_strain_ann_order))
 pao1_zeros <- get_zeros(rnaseq_pao1_tpm_log[ , seq_strain_ann_order == 'PAO1'], .1, .9)
 pa14_zeros <- get_zeros(rnaseq_pa14_tpm_log[ , seq_strain_ann_order == 'PA14'], .1, .9)
 # median hk expression lower and upper thresholds
-pao1_hk <- get_hks(rnaseq_pao1_tpm_log[ , seq_strain_ann_order == 'PAO1'], hks_pao1, .2, .98) #.025,.975 #.2, .98
-pa14_hk <- get_hks(rnaseq_pa14_tpm_log[ , seq_strain_ann_order == 'PA14'], hks_pa14, .2, .98)
+# The following were the filtering thresholds used by the original compendia; 
+# I've kept this code in to explicitly record what the thresholds were previously and how they have changed now
+# pao1_hk <- get_hks(rnaseq_pao1_tpm_log[ , seq_strain_ann_order == 'PAO1'], hks_pao1, .2, .98) #.025,.975 #.2, .98
+# pa14_hk <- get_hks(rnaseq_pa14_tpm_log[ , seq_strain_ann_order == 'PA14'], hks_pa14, .2, .98)
 
+# I increased the range (decreasing the lower threshold from 0.2 to 0.7) to 
+# increase the number of samples that are retained; 
+# previously, all but one ASM sample and one M63 sample were dropped.
+# With the decrease, all ASM and M63 samples are retained. 
+# These samples are important controls that the analysis relies on, so I am 
+# highly motivated to keep them in the filtered compendium.
+pao1_hk <- get_hks(rnaseq_pao1_tpm_log[ , seq_strain_ann_order == 'PAO1'], hks_pao1, .07, .98) #.025,.975 #.2, .98
+pa14_hk <- get_hks(rnaseq_pa14_tpm_log[ , seq_strain_ann_order == 'PA14'], hks_pa14, .07, .98)
 
 # apply filtering -------------------------------------------------------
 
