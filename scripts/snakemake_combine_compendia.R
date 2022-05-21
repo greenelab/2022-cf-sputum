@@ -34,10 +34,10 @@ numreads_og <- numreads_og %>%
 
 # read in raw new srx samples ---------------------------------------
 tpm_new <- read_csv(snakemake@input[["tpm_new"]], show_col_types = FALSE) %>%
-#tpm_new <- read_csv("outputs/combined_new_srx/TPM_pa14.csv") %>%
+#tpm_new <- read_csv("outputs/combined_new/TPM_pa14.csv") %>%
   clean_names(case = "all_caps")
 numreads_new <- read_csv(snakemake@input[["numreads_new"]], show_col_types = FALSE) %>%
-# numreads_new <- read_csv("outputs/combined_new_srx/num_reads_pao1.csv") %>%
+# numreads_new <- read_csv("outputs/combined_new/num_reads_pao1.csv") %>%
   clean_names(case = "all_caps")
 
 # check that no new samples are already in the compendia ------------------
@@ -57,12 +57,10 @@ if(length(new_samples_in_og_compendia) > 0){
 }
 # combine and write out as csv --------------------------------------------
 
-# use left join on old compendia gene names; will filter any additional names
-# that sneak into the new compendia, although I can't think of a time this would
-# actually happen
+# use left join on old compendia gene names; rename txname and name cols 
 tpm <- left_join(tpm_og, tpm_new, by = "NAME") %>%
-  select(TxName = TX_NAME, Name = NAME, starts_with("E"), starts_with("S"))
+  rename(TxName = TX_NAME, Name = NAME)
 write_csv(tpm, snakemake@output[['tpm']])
 numreads <- left_join(numreads_og, numreads_new, by = "NAME") %>%
-  select(TxName = TX_NAME, Name = NAME, starts_with("E"), starts_with("S"))
+  rename(TxName = TX_NAME, Name = NAME)
 write_csv(numreads, snakemake@output[['numreads']])
