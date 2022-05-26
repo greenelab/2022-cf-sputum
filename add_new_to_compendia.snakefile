@@ -131,7 +131,7 @@ rule interleave_reads:
     
 rule salmon_spu:
     """
-    This is the same rue as above, with the only difference being that this
+    This is the same rule as above (rule `salmon`), with the only difference being that this
     one runs on the lab samples, while the previous one ran on the public SRX
     samples. The rule has to be repeated because the input files differ -- 
     if I had set up my files so that the hogan lab samples and the SRX samples 
