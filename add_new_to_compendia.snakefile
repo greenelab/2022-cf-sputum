@@ -7,6 +7,10 @@ m = m[m['pa_in_reads'] == True] # filter the metadata to samples that contained 
 SRX = list(m['experiment_accession'])
 STRAIN = ['pao1', 'pa14']
 
+h = pd.read_csv("inputs/hogan_metadata.csv", header = 0)
+SPU = list(h['sample'])
+
+ALL_SAMPLES = SRX + SPU
 
 rule all:
     input:
@@ -104,16 +108,68 @@ rule salmon:
         --minScoreFraction 0.65 --fldMean 51 --seqBias -l A    \
         -r {input.reads} -o {params.out_dir}
     '''
+
+rule interleave_reads:
+    """
+    Since paired-end reads need to be processed as single-end, interleave reads
+    using the same code as is in the download script for publicly available samples
+    No conda env is required for this rule since everything is installed in the
+    `sputum` env
+    Rule assumes that input files are already in place at inputs/raw/hogan/
+    """ 
+    output: "outputs/interleaved_spu/{spu}.fastq.gz"
+    params: indir = "inputs/raw/hogan/"
+    threads: 1
+    resources: mem_mb = 4000
+    run:
+        # use metadata to determine input file names, which have additional characters
+        # over what is in the spu wildcard
+        row = h.loc[h['sample'] == wildcards.spu]
+        r1 = row['r1'].values[0]
+        r2 = row['r2'].values[0]
+        shell("reformat.sh in1={params.indir}{r1} in2={params.indir}{r2} out={output}")
     
+rule salmon_spu:
+    """
+    This is the same rule as above (rule `salmon`), with the only difference being that this
+    one runs on the lab samples, while the previous one ran on the public SRX
+    samples. The rule has to be repeated because the input files differ -- 
+    if I had set up my files so that the hogan lab samples and the SRX samples 
+    lived in the same folder, then I could use the ALL_SAMPLES wildcard above
+    to run this rule only once. however, since my files live in different 
+    directories (and I like this organization scheme), I (think) I have to 
+    repeat this rule.
+    """
+    input:
+        idx = "outputs/t_indxs/{strain}_cdna_k15/info.json",
+        reads = "outputs/interleaved_spu/{spu}.fastq.gz"
+    output: 
+        quant = "outputs/salmon_spu/{strain}/{spu}/quant.sf",
+        logm = "outputs/salmon_spu/{strain}/{spu}/aux_info/meta_info.json",
+    params: 
+        indx_dir = lambda wildcards: "outputs/t_indxs/" + wildcards.strain + "_cdna_k15",
+        out_dir  = lambda wildcards: "outputs/salmon_spu/" + wildcards.strain + "/" + wildcards.spu 
+    conda: "envs/salmon.yml"
+    threads: 1
+    resources:
+        mem_mb=8000 
+    shell:'''
+    salmon quant -i {params.indx_dir} --softclip --softclipOverhangs \
+        --minScoreFraction 0.65 --fldMean 51 --seqBias -l A    \
+        -r {input.reads} -o {params.out_dir}
+    '''
+
 rule multiqc_salmon_aux_files:
     """
     compiles all log information for the salmon runs, including library type, reads mapped, etc.
     does not join this file to the compendia logs, 
     """
-    input: expand("outputs/salmon/{{strain}}/{srx}/aux_info/meta_info.json", srx = SRX)
+    input:
+        expand("outputs/salmon/{{strain}}/{srx}/aux_info/meta_info.json", srx = SRX),
+        expand("outputs/salmon_spu/{{strain}}/{spu}/aux_info/meta_info.json", spu = SPU)
     output: "outputs/multiqc/logs_{strain}_multiqc_report.html"
     params: 
-        indir = lambda wildcards: "outputs/salmon/" + wildcards.strain,
+        indir = lambda wildcards: "outputs/salmon*/" + wildcards.strain,
         outdir = "outputs/multiqc"
     conda: "envs/multiqc.yml"
     threads: 1
@@ -149,10 +205,11 @@ rule combine_quant_sf_files:
     """
     input:
         annot_map = "inputs/transcriptomes/{strain}_gene_names.csv",
-        quant = expand("outputs/salmon/{{strain}}/{srx}/quant.sf", srx = SRX)
+        quant_srx = expand("outputs/salmon/{{strain}}/{srx}/quant.sf", srx = SRX),
+        quant_spu = expand("outputs/salmon_spu/{{strain}}/{spu}/quant.sf", spu = SPU),
     output: 
-        numreads="outputs/combined_new_srx/num_reads_{strain}.csv",
-        tpm="outputs/combined_new_srx/TPM_{strain}.csv"
+        numreads="outputs/combined_new/num_reads_{strain}.csv",
+        tpm="outputs/combined_new/TPM_{strain}.csv"
     conda: "envs/tidyverse.yml"
     threads: 1
     resources:
@@ -198,8 +255,8 @@ rule download_pa14_raw_numread_compendia:
 
 rule combine_compendia_with_new_samples_raw:
     input:
-        numreads_new="outputs/combined_new_srx/num_reads_{strain}.csv",
-        tpm_new="outputs/combined_new_srx/TPM_{strain}.csv",
+        numreads_new="outputs/combined_new/num_reads_{strain}.csv",
+        tpm_new="outputs/combined_new/TPM_{strain}.csv",
         numreads_og="inputs/original_compendia/num_reads_{strain}_cdna_k15.csv",
         tpm_og="inputs/original_compendia/TPM_{strain}_cdna_k15.csv"
     output:
