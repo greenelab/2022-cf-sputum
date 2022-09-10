@@ -10,7 +10,7 @@ library(plyr)
 # determine control set from snakemake wildcards -------------------------
 
 strain <- snakemake@wildcards[['strain']]
-# strain <- "pa14"
+# strain <- "pao1"
 controls <- snakemake@wildcards[['controls']]
 # controls <- "m63"
 
@@ -81,9 +81,13 @@ if(group == "spu"){
 # number of unobserved genes (zeroes), or low expression of house keeping genes.
 # The counts are otherwise raw (e.g. produced by salmon), and so are normalized
 # with using the ADAGEpath functions
-rnaseq_data <-  read_csv("~/github/2022-cf-sputum/outputs/filt_norm_compendia/pa14_aligned_compendium_p2_filtered_num_reads.csv", show_col_types = F) %>%
+rnaseq_data <- read_csv(snakemake@input[['num_reads']], show_col_types = F) %>%
+#rnaseq_data <- read_csv("outputs/filt_norm_compendia/pao1_aligned_compendium_p2_filtered_num_reads.csv", show_col_types = F) %>%
   dplyr::rename(geneID = `...1`) %>%                            # reset index (no colname) to geneID
   dplyr::select(geneID, all_of(control_set), one_of(group_set)) # select control samples, experimental samples
+
+# note that some of the group_set may not be in the RNAseq data because those samples 
+# did not pass filtering thresholds when the compendium was originally built
 
 data_raw <- load_dataset(input        = rnaseq_data,
                          isProcessed  = TRUE,
@@ -96,16 +100,18 @@ data_raw <- load_dataset(input        = rnaseq_data,
 data_normed <- zeroone_norm(input_data = data_raw, use_ref = TRUE, ref_data = PAcompendium)
 
 data_activity <- calculate_activity(input_data = data_normed, model = eADAGEmodel)
+write_tsv(data_activity, snakemake@output[['data_activity']])
 
 
-# build vector for phenotype information. use control set and the final number of
-# columns in the rna_seq data to build this information
+# build vector for phenotype information. 
+# use control set and the final number of columns in the rna_seq data to build this information.
 data_pheno <- c(rep("control", length(control_set)), rep(group, (ncol(rnaseq_data) - (length(control_set) + 1))))
 
 limma_result <- build_limma(data_activity,
                             phenotypes = data_pheno,
                             control_pheno = "control",
                             use.bonferroni = TRUE)
+write_tsv(limma_result, snakemake@output[['limma_result']])
 
 active_sigs <- get_active_signatures(limma_result = limma_result,
                                      pheno_group  = "both",
@@ -114,24 +120,37 @@ active_sigs <- get_active_signatures(limma_result = limma_result,
 
 
 # plots -------------------------------------------------------------------
+# uncomment these lines to produce default visualizations from ADAGE
+pdf(snakemake@output[['volcano_plot']])
+plot_volcano(limma_result = limma_result, highlight_signatures = active_sigs,
+             interactive = TRUE)
+dev.off()
 
-#plot_volcano(limma_result = limma_result, highlight_signatures = active_sigs,
-#             interactive = TRUE)
-#plot_activity_heatmap(activity = data_activity, signatures = active_sigs)
+pdf(snakemake@output[['activity_heatmap_plot']])
+plot_activity_heatmap(activity = data_activity, signatures = active_sigs)
+def.off()
 
 # overlapping signature removal -------------------------------------------
 # check whether active signatures overlap with each other
 # plot a heatmap of odds ratios that represent the odds that two sigantures share a specific number of genes
+pdf(snakemake@output[['signature_overlap_plot']])
 signature_similarity <- plot_signature_overlap(selected_signatures = active_sigs,
                                                model = eADAGEmodel)
+dev.off()
+
 # calculate the marginal activities of similar signatures.
 # Marginal activity is the activy of sig A after removing genes that it shares with sig B
 marginal_activity <- calculate_marginal_activity(input_data = data_normed,
                                                  selected_signatures = active_sigs,
                                                  model = eADAGEmodel)
+write_tsv(marginal_activity, snakemake@output[['marginal_activity']])
+
 # build limma model to test whether marginal activities are different between two conditions
 marginal_limma <- build_limma(input_data = marginal_activity,
                               phenotypes = data_pheno, control_pheno = "control")
+write_tsv(marginal_limma, snakemake@output[['marginal_limma']])
+
+
 # remove redundant signatures
 unique_active_sigs <- remove_redundant_signatures(marginal_limma,
                                                   sig_cutoff = 0.05)
@@ -147,7 +166,7 @@ KEGG_subset <- KEGG[lengths(KEGG) >= 3 & lengths(KEGG) <= 500]
 pathway_association <- annotate_signatures_with_genesets(
   selected_signatures = unique_active_sigs, model = eADAGEmodel,
   genesets = KEGG_subset)
-
+write_tsv(pathway_association, snakemake@output[['pathway_association']])
 # Calculate the activity of associated pathways inside active signatures
 pathway_activity <- signature_geneset_activity(
   signature_geneset_df = pathway_association[, c("signature", "geneset")],
@@ -163,12 +182,22 @@ pathway_limma <- build_limma(pathway_activity, phenotypes = data_pheno,
 combined_result <- combine_geneset_outputs(
   signature_geneset_association = pathway_association,
   geneset_limma_result = pathway_limma)
+write_tsv(combined_result, snakemake@output[['combined_activation_and_assoc_df']])
 
 # what signatures are uncharacterized by kegg?
 uncharacterized_sigs <- setdiff(unique_active_sigs, pathway_association$signature)
-uncharacterized_sigs
+write.table(uncharacterized_sigs, snakemkae@output[['uncharacterized_sigs']])
 
 # grab genes in signature and annotate
-annotate_genes_in_signatures(selected_signatures = "Node35neg",
-                             model = eADAGEmodel,
-                             curated_pathways = KEGG)
+# loop over nodes in unique_active_sigs, run annotation, and combine into df
+unique_active_sigs_annotated_df <- data.frame()
+for(signature in unique_active_sigs){
+  df <- annotate_genes_in_signatures(selected_signatures = signature,
+                                     model = eADAGEmodel,
+                                     curated_pathways = KEGG)
+  unique_active_sigs_annotated_df <- dplyr::bind_rows(unique_active_sigs_annotated_df, df)
+}
+write_tsv(unique_active_sigs_annotated_df, snakemake@output[['unique_active_sigs_annotated_df']])
+
+
+
