@@ -6,6 +6,10 @@ STRAIN = ['pao1', 'pa14'] # only run pao1 since this is what the eADAGE model is
 CONTROLS = ['asm', 'm63', 'lb']
 GROUPS = ['spu', 'spu_m', 'spu_pub']
 
+rule all:
+    input:
+        expand("outputs/adage/{strain}-{group}-{control}_combined_activation_and_assoc_df.tsv", strain = STRAIN, control = CONTROLS, group = GROUPS)
+
 rule install_adage:
     output: install = "outputs/adage/adage_installed.txt"
     conda: "envs/adagepath.yml"
@@ -24,7 +28,7 @@ rule run_adage:
         marginal_limma = "outputs/adage/{strain}_{group}_{control}_marginal_time.tsv",
         signature_overlap_plot = "outputs/adage/{strain}_{group}_{control}_signature_overlap_plot.pdf",
         pathway_association_df = "outputs/adage/{strain}_{group}_{control}_pathway_association_df.tsv",
-        combined_activation_and_assoc_df = "outputs/adage/{strain}_{group}_{control}_combined_activation_and_assoc_df.tsv",
+        combined_activation_and_assoc_df = "outputs/adage/{strain}-{group}-{control}_combined_activation_and_assoc_df.tsv",
         uncharacterized_sigs = "outputs/adage/{strain}_{group}_{control}_uncharacterized_sigs.txt",
         unique_active_sigs_annotated_df = "outputs/adage/{strain}_{group}_{control}_unique_active_sigs_annotated_df.tsv",
     conda: "envs/adagepath.yml"

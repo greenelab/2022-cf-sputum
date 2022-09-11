@@ -11,7 +11,7 @@ library(plyr)
 
 strain <- snakemake@wildcards[['strain']]
 # strain <- "pao1"
-controls <- snakemake@wildcards[['controls']]
+controls <- snakemake@wildcards[['control']]
 # controls <- "m63"
 
 # make control set against which to do comparisons
@@ -84,7 +84,7 @@ if(group == "spu"){
 rnaseq_data <- read_csv(snakemake@input[['num_reads']], show_col_types = F) %>%
 #rnaseq_data <- read_csv("outputs/filt_norm_compendia/pao1_aligned_compendium_p2_filtered_num_reads.csv", show_col_types = F) %>%
   dplyr::rename(geneID = `...1`) %>%                            # reset index (no colname) to geneID
-  dplyr::select(geneID, all_of(control_set), one_of(group_set)) # select control samples, experimental samples
+  dplyr::select(geneID, one_of(control_set), one_of(group_set)) # select control samples, experimental samples
 
 # note that some of the group_set may not be in the RNAseq data because those samples 
 # did not pass filtering thresholds when the compendium was originally built
@@ -102,6 +102,7 @@ data_normed <- zeroone_norm(input_data = data_raw, use_ref = TRUE, ref_data = PA
 data_activity <- calculate_activity(input_data = data_normed, model = eADAGEmodel)
 write_tsv(data_activity, snakemake@output[['data_activity']])
 
+print("got here!")
 
 # build vector for phenotype information. 
 # use control set and the final number of columns in the rna_seq data to build this information.
@@ -126,9 +127,10 @@ plot_volcano(limma_result = limma_result, highlight_signatures = active_sigs,
              interactive = TRUE)
 dev.off()
 
+
 pdf(snakemake@output[['activity_heatmap_plot']])
 plot_activity_heatmap(activity = data_activity, signatures = active_sigs)
-def.off()
+dev.off()
 
 # overlapping signature removal -------------------------------------------
 # check whether active signatures overlap with each other
@@ -154,7 +156,6 @@ write_tsv(marginal_limma, snakemake@output[['marginal_limma']])
 # remove redundant signatures
 unique_active_sigs <- remove_redundant_signatures(marginal_limma,
                                                   sig_cutoff = 0.05)
-
 # pathways ----------------------------------------------------------------
 
 KEGG <- fetch_geneset(type = "KEGG")
@@ -166,13 +167,15 @@ KEGG_subset <- KEGG[lengths(KEGG) >= 3 & lengths(KEGG) <= 500]
 pathway_association <- annotate_signatures_with_genesets(
   selected_signatures = unique_active_sigs, model = eADAGEmodel,
   genesets = KEGG_subset)
-write_tsv(pathway_association, snakemake@output[['pathway_association']])
+write_tsv(pathway_association, snakemake@output[['pathway_association_df']])
+
 # Calculate the activity of associated pathways inside active signatures
 pathway_activity <- signature_geneset_activity(
   signature_geneset_df = pathway_association[, c("signature", "geneset")],
   gene_set_list = KEGG_subset, model = eADAGEmodel, input_data = data_normed)
 #plot_activity_heatmap(pathway_activity)
 
+print("got here 1")
 
 # run a limma test on pathway activities and find pathways that are active
 pathway_limma <- build_limma(pathway_activity, phenotypes = data_pheno,
@@ -184,10 +187,11 @@ combined_result <- combine_geneset_outputs(
   geneset_limma_result = pathway_limma)
 write_tsv(combined_result, snakemake@output[['combined_activation_and_assoc_df']])
 
+print("got here 2")
 # what signatures are uncharacterized by kegg?
 uncharacterized_sigs <- setdiff(unique_active_sigs, pathway_association$signature)
-write.table(uncharacterized_sigs, snakemkae@output[['uncharacterized_sigs']])
-
+write.table(uncharacterized_sigs, snakemake@output[['uncharacterized_sigs']])
+print("got here 3")
 # grab genes in signature and annotate
 # loop over nodes in unique_active_sigs, run annotation, and combine into df
 unique_active_sigs_annotated_df <- data.frame()
