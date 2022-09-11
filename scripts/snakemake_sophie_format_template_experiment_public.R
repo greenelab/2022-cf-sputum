@@ -83,7 +83,7 @@ if(comparison == 'pub-vs-m63'){
 # ponyo_out depends on groups_out and the comparison, so it can be run outside
 # of the if/else statements.
 ponyo_out  <- data.frame(experiment_colname = paste0(strain, "_", comparison), 
-                         sample_id_colname  = groups_out$sample)
+                         sample_id_colname  = out$groups$sample)
 # write results -----------------------------------------------------------
 
 # use base R write.table() to write counts so that rownames are written as an index

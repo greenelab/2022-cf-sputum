@@ -30,7 +30,7 @@ wildcard_constraints:
 # They're used to name input/output files correctly.
 # I read them in below using sophie's config file reader.
 # NUM_SIMULATED_RUNS also needed to be specified as a range from 0:num_simulated_runs to properly solve files names, so that is specified below.
-sophie_params = utils.read_config("config/sophie_pub_comparisons.tsv")
+sophie_params = utils.read_config("config/sophie_hogan_comparisons.tsv")
 NN_ARCHITECTURE    = sophie_params["NN_architecture"]
 LATENT_DIM         = sophie_params["latent_dim"]
 RUN_IDS            = list(range(0, sophie_params["num_simulated_runs"]))
@@ -93,7 +93,7 @@ rule simulate_experiments_based_on_template_experiment:
     I think this is a fine design caveat, as only one model should be used for all of the experiments.
     '''
     input:
-        config = "config/sophie_pub_comparisons.tsv",
+        config = "config/sophie_hogan_comparisons.tsv",
         normalized_compendium_filename = "outputs/sophie/NN_models/{strain}/data/normalized_compendium.tsv",
         normalized_template_filename = "outputs/sophie/{strain}__{pub_comparison}/data/normalized_template_compendium.tsv",
         scaler_filename = "outputs/sophie/NN_models/{strain}/data/scaler_transform.pickle",
@@ -120,7 +120,7 @@ rule simulate_experiments_based_on_template_experiment:
 
 rule process_template_data:
     input:
-        config = "config/sophie_pub_comparisons.tsv",
+        config = "config/sophie_hogan_comparisons.tsv",
         raw_template_filename = "outputs/sophie_template_experiments/{strain}__{pub_comparison}_num_reads.tsv",
         grp_metadata_filename = "outputs/sophie_template_experiments/{strain}__{pub_comparison}_groups.tsv",
     output:
@@ -145,7 +145,7 @@ rule process_simulated_data:
     multiple times, once for each num_simulated_runs
     '''
     input:
-        config = "config/sophie_pub_comparisons.tsv",
+        config = "config/sophie_hogan_comparisons.tsv",
         grp_metadata_filename = "outputs/sophie_template_experiments/{strain}__{pub_comparison}_groups.tsv",
         simulated_filename =  "outputs/sophie/{strain}__{pub_comparison}/pseudo_experiment/selected_simulated_data_x_{run_id}.txt"
     output:
@@ -202,7 +202,7 @@ rule get_DE_stats_simulated_data:
 
 rule rank_genes:
     input:
-        config = "config/sophie_pub_comparisons.tsv",
+        config = "config/sophie_hogan_comparisons.tsv",
         template_stats_filename = "outputs/sophie/DE_stats/DE_stats_template_data_{strain}__{pub_comparison}_real.txt",
         simulated_stats_filenames = expand("outputs/sophie/DE_stats/DE_stats_simulated_data_{{strain}}__{{pub_comparison}}_{run_id}.txt", run_id = RUN_IDS)
     output:
