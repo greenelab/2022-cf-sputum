@@ -118,5 +118,16 @@ Note the `_spu` folders contain the Hogan lab samples; because of the input data
 
 ### `adage.snakefile`:
 
+This snakefile relies on outputs from `add_new_to_compendia.snakefile`.
+It runs ADAGEpath to determine activated nodes (comprised of genes) in sputum or *ex vivo* samples compared to sets of controls (`asm`, `m63`, `lb`).
+
+This snakefile produces the output folder `adage`, which contains data frames and plots from each adage comparison.
 
 ### `sophie.snakefile`:
+
+This snakefile relies on outputs from `add_new_to_compendia.snakefile`.
+This snakefile runs SOPHIE to identify differentially expressed genes that are unique to a given contrast.
+It produces the output folders:
+
++ `sophie_training_compendia` & `sophie_template_experiments`: formats files in the required input format for SOHPIE.
++ `sophie`: differentially expressed genes output by SOPHIE, ranked by distinctness to a given contrast. Note that the Z score is not a proper Z score, but will change depending on the parameters used to run SOPHIE. We kept these parameters consistent and matched them to the SOPHIE publication so that Z scores could be compared across contrasts.
