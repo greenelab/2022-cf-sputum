@@ -102,8 +102,6 @@ data_normed <- zeroone_norm(input_data = data_raw, use_ref = TRUE, ref_data = PA
 data_activity <- calculate_activity(input_data = data_normed, model = eADAGEmodel)
 write_tsv(data_activity, snakemake@output[['data_activity']])
 
-print("got here!")
-
 # build vector for phenotype information. 
 # use control set and the final number of columns in the rna_seq data to build this information.
 data_pheno <- c(rep("control", length(control_set)), rep(group, (ncol(rnaseq_data) - (length(control_set) + 1))))
@@ -175,8 +173,6 @@ pathway_activity <- signature_geneset_activity(
   gene_set_list = KEGG_subset, model = eADAGEmodel, input_data = data_normed)
 #plot_activity_heatmap(pathway_activity)
 
-print("got here 1")
-
 # run a limma test on pathway activities and find pathways that are active
 pathway_limma <- build_limma(pathway_activity, phenotypes = data_pheno,
                              control_pheno = "control", use.bonferroni = TRUE)
@@ -187,11 +183,10 @@ combined_result <- combine_geneset_outputs(
   geneset_limma_result = pathway_limma)
 write_tsv(combined_result, snakemake@output[['combined_activation_and_assoc_df']])
 
-print("got here 2")
 # what signatures are uncharacterized by kegg?
 uncharacterized_sigs <- setdiff(unique_active_sigs, pathway_association$signature)
 write.table(uncharacterized_sigs, snakemake@output[['uncharacterized_sigs']])
-print("got here 3")
+
 # grab genes in signature and annotate
 # loop over nodes in unique_active_sigs, run annotation, and combine into df
 unique_active_sigs_annotated_df <- data.frame()
