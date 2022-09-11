@@ -20,12 +20,10 @@ from generic_expression_patterns_modules import process, stats, ranking, new_exp
 # I have removed the input and output files from the sophie config file.
 # Instead, these files are solved through wildcards, and their paths are specified as inputs and outputs for each of the snakemake rules.
 STRAIN = ["pa14", "pao1"]
-PUB_COMPARISONS = ['pub-vs-lbpao1', 'pub-vs-lbpa14', '', '']
+PUB_COMPARISONS = ['pub-vs-lbpao1', 'pub-vs-lbpa14', 'pub-vs-m63']
 
 # constrain these wildcards so they solve properly
 wildcard_constraints:
-#    strain="pa..", # pa and then two characters
-#    pub_comparison="...-vs-.*", # three characters, then -vs-, then any number of any characters
     run_id = "\d+" # constrain to digits only
 
 # A few of the config-specified variables also need to be accessible as global variables in the snakefile.
@@ -39,19 +37,16 @@ RUN_IDS            = list(range(0, sophie_params["num_simulated_runs"]))
 
 rule all:
     input: 
-        expand("outputs/sophie/{strain}__{pub_comparison}/generic_gene_summary.tsv", strain = STRAIN, pub_comparison = HOGAN_COMPARISONS)
+        expand("outputs/sophie/{strain}__{pub_comparison}/generic_gene_summary.tsv", strain = STRAIN, pub_comparison = PUB_COMPARISONS)
 
 
-rule format_template_experiments_hogan:
+rule format_template_experiments_pub:
     """
-    This rule will require the outputs from the snakefile add_new_to_compendia.snakefile,
-    which processes the hogan lab counts into a dataframe. The rule takes this dataframe of
-    counts and separates it into six template experiments, described by the
-    pub_comparisons list.
+    This rule will require the outputs from the snakefile add_new_to_compendia.snakefile.
     """
     input:
-        metadata="inputs/hogan_metadata.csv",
-        counts="outputs/combined_new/num_reads_{strain}.csv"
+        metadata="inputs/metadata.csv",
+        counts="outputs/combined_compendia/num_reads_{strain}.csv"
     output:
         num_reads="outputs/sophie_template_experiments/{strain}__{pub_comparison}_num_reads.tsv",
         grps="outputs/sophie_template_experiments/{strain}__{pub_comparison}_groups.tsv",
@@ -59,15 +54,7 @@ rule format_template_experiments_hogan:
     conda: "envs/tidyverse.yml"
     threads: 1
     resources: mem_mb=6000
-    script: "scripts/snakemake_sophie_format_template_experiment_hogan.R"
-
-rule format_template_experiments_other_sputum:
-    """
-    This rule will require the outputs from the snakefile add_new_to_compendia.snakefile,
-    which processes the hogan lab counts into a dataframe. Use the sputum metadata table 
-    to separate counts from SRA experiments (SRX) into different template experiments 
-    based on the study they were generated in. Produces 5 total template experiments.
-    """
+    script: "scripts/snakemake_sophie_format_template_experiment_public.R"
 
 ##########################################################
 ## SOPHIE -- process and train new VAEs

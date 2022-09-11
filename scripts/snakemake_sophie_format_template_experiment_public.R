@@ -6,13 +6,14 @@ library(tibble)
 
 # set strain using wildcard so that proper set of control samples can be extracted
 strain <- unlist(snakemake@wildcards[['strain']])
+# strain <- "pao1"
 
 # read in hogan lab sample counts
-#counts <- read_csv("outputs/combined_new/num_reads_pao1.csv")
+#counts <- read_csv("outputs/combined_compendia/num_reads_pao1.csv")
 counts <- read_csv(snakemake@input[['counts']], show_col_types = F)
 
 # read in hogan lab sample metadata
-#metadata <- read_csv("inputs/hogan_metadata.csv")
+#metadata <- read_csv("inputs/metadata.csv")
 metadata <- read_csv(snakemake@input[['metadata']], show_col_types = F)
 
 # determine experiment that is being compared ----------------------------------
@@ -20,8 +21,8 @@ metadata <- read_csv(snakemake@input[['metadata']], show_col_types = F)
 # figure out what comparison should be formatted with this run by parsing the 
 # snakemake wildcard. Each "hogan_comparison" contains two experiments, separated
 # by "-vs-".
-comparison <- unlist(snakemake@wildcards[['hogan_comparison']])
-# comparison <- 'asm-vs-asm_m'
+comparison <- unlist(snakemake@wildcards[['pub_comparison']])
+# comparison <- 'pub-vs-lbpao1'
 
 # parse comparison to determine which two sample sets to place in template files
 set1 <- gsub("-.*", "", comparison)
@@ -29,36 +30,30 @@ set2 <- gsub(".*-vs-", "", comparison)
 
 # separate hogan lab samples into sets based on sample type --------------------
 
-spu_m_samples <- metadata %>%
-  filter(metals == "metals") %>%
-  filter(!grepl("ASM", x = sample))
+pub_samples <- metadata %>%
+  filter(pa_in_reads == TRUE) 
 
-asm_m_samples <- metadata %>%
-  filter(metals == "metals") %>%
-  filter(grepl("ASM", x = sample))
+m63_samples <- c("M631", "M632", "M633")
 
-spu_samples <- metadata %>%
-  filter(metals == "no metals") %>%
-  filter(!grepl("ASM", x = sample)) %>%
-  filter(!grepl("^M", x = sample))
+lbpao1_samples <- c('SRX5661364', 'SRX5661363', 'SRX6976948', 'SRX6976949',
+                    'SRX6976950', 'SRX8862509', 'SRX8862510', 'ERX2813653',
+                    'ERX2813654', 'ERX2813655', 'ERX2068559', 'ERX2068560',
+                    'ERX2068561', 'SRX4579961', 'SRX4579962', 'SRX4579963',
+                    'SRX8487076', 'SRX8487077', 'SRX8487078')
 
-asm_samples <- metadata %>%
-  filter(metals == "no metals") %>%
-  filter(grepl("ASM", x = sample))
+lbpa14_samples <-  c('SRX474156', 'SRX474157', 'SRX8030422', 'SRX8030424',
+                     'SRX474130', 'SRX474131', 'SRX7299397', 'SRX7299398',
+                     'SRX8030426', 'SRX8030428', 'SRX470383', 'SRX470384',
+                     'SRX804118', 'SRX804119', 'SRX4641857', 'SRX4641858')
 
-m63_samples <- metadata %>%
-  filter(metals == "no metals") %>%
-  filter(grepl("^M", x = sample))
 
-spu_m_counts <- counts %>% select(Name, one_of(spu_m_samples$sample)) 
+pub_counts <- counts %>% select(Name, one_of(pub_samples$experiment_accession)) 
 
-asm_m_counts <- counts %>% select(Name, one_of(asm_m_samples$sample)) # select Name and metal samples
-
-spu_counts <- counts %>% select(Name, one_of(spu_samples$sample)) # select Name and nonmetal samples
+lbpao1_counts <- counts %>% select(Name, one_of(lbpao1_samples)) 
   
-asm_counts <- counts %>% select(Name, one_of(asm_samples$sample)) # select Name and artificial samples
+lbpa14_counts <- counts %>% select(Name, one_of(lbpa14_samples)) 
 
-m63_counts <- counts %>% select(Name, one_of(m63_samples$sample)) # select Name and m63 samples
+m63_counts <- counts %>% select(Name, one_of(m63_samples)) # select Name and m63 samples
 
 
 # create metadata and count tables with correct contrasts ----------------------
@@ -77,19 +72,13 @@ create_count_and_group_metadata <- function(counts1, counts2){
   return(list(counts = counts_out, groups = groups_out))
 }
 
-if(comparison == 'asm-vs-asm_m'){
-  out <- create_count_and_group_metadata(asm_counts, asm_m_counts)
-} else if(comparison == "spu-vs-spu_m"){
-  out <- create_count_and_group_metadata(spu_counts, spu_m_counts)
-} else if(comparison == "spu-vs-asm"){
-  out <- create_count_and_group_metadata(spu_counts, asm_counts)
-} else if(comparison == "spu-vs-m63"){
-  out <- create_count_and_group_metadata(spu_counts, m63_counts)
-} else if(comparison == "spu_m-vs-asm_m"){
-  out <- create_count_and_group_metadata(spu_m_counts, asm_m_counts)
-} else if(comparison == "asm-vs-m63"){
-  out <- create_count_and_group_metadata(asm_counts, m63_counts)
-}
+if(comparison == 'pub-vs-m63'){
+  out <- create_count_and_group_metadata(pub_counts, m63_counts)
+} else if(comparison == "pub-vs-lbpao1"){
+  out <- create_count_and_group_metadata(pub_counts, lbpao1_counts)
+} else if(comparison == "pub-vs-lbpa14"){
+  out <- create_count_and_group_metadata(pub_counts, lbpa14_counts)
+} 
 
 # ponyo_out depends on groups_out and the comparison, so it can be run outside
 # of the if/else statements.
