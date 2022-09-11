@@ -66,7 +66,7 @@ We separate these questions by data set: publicly available RNA-seq from sputum 
 + Does ASM mimic the sputum environment well?
     + Experiments: Sophie ASM vs. M63; Sophie ASM vs. ex vivo sputum; Sophie ex vivo sputum vs. M63
 
-### Relating the Hogan lab data to publicly available data
+### Relating the *ex vivo* RNA-seq data to publicly available sputum RNA-seq data
 
 + Are genes that are activated in the public samples the same as those that are activated in the ex vivo samples?
     + Are there common pathways/genes that are activated in all public and ex vivo samples that are not commonly differentially expressed?
