@@ -1,10 +1,8 @@
 # Using *Pseudomonas aeruginosa* transcriptome profiles to discover facets of cystic fibrosis (CF) disease processes
 
-1) Identify metabolite candidates that promote Pa growth 
-2) Test whether metabolites that inversely correlate with CF lung function induce Pa virulence-related pathways
+This repository investigates RNA-seq data from *P. aeruginosa* to determine genes and pathways that are associated with CF.
 
 ## Getting started with this repository
-
 
 This repository uses conda to manage software installations. 
 You can find operating system-specific instructions for installing miniconda [here](https://docs.conda.io/en/latest/miniconda.html).
@@ -13,7 +11,6 @@ To setup the environment required for this repository, run the following command
 conda env create --name sputum --file environment.yml
 conda activate sputum
 ```
-
 
 Snakemake can parallelize job submission and modulate resource usage (RAM, CPUs). 
 We used the command below in a slurm cluster, but other cluster engines [are also supported](https://snakemake.readthedocs.io/en/stable/executing/cluster.html).
@@ -40,9 +37,44 @@ These parameters are described below:
 
 Recently, a compendia of *P. aeruginosa* gene expression were created using publicly available RNA-seq data (see [preprint](https://doi.org/10.1101/2022.01.24.477642), [data repository](https://osf.io/s9gyu/), and [GitHub repository](https://github.com/georgiadoing/pa-seq-compendia)).
 This repository leverages these compendia to identify transcriptome signatures relevant to CF. 
-Given that new RNA-seq sputum samples have been processed since the construction of the compendia, and since some sputum samples weren't included in the compendia because they were not annotated as containing *P aeruginosa*, this repository includes a snakefile that processes new samples by SRA experiment accession and adds them to the existing compendia.
+Since the compendia was constructed, new RNA-seq samples from expectorated sputum from CF patients have been added to the SRA.
+Additionally, *ex vivo* sputum samples in which *P. aeruginosa* was cultured were created by the Hogan lab.
+This repository includes a snakefile that processes these new samples to add them to the existing compendia, and then uses the new compendia for downstream analysis.
 
 We used the software tools [eADAGE](https://pubmed.ncbi.nlm.nih.gov/28711280/) and [SOPHIE](https://www.biorxiv.org/content/10.1101/2021.05.24.445440v1) to discover and and rank gene expression patterns by specific relevance to CF, and [sourmash gather](https://www.biorxiv.org/content/10.1101/2022.01.11.475838v2) to identify specific strains present in each sample.
+
+## Questions and approach
+
+Below we describe the questions asked by the data analyses in this repository and outline the computational experiments used to address these questions.
+We separate these questions by data set: publicly available RNA-seq from sputum samples or RNA-seq from *P. aeruginosa* cultured on sputum (*ex vivo*). 
+
+### Publicly available RNA-seq from sputum samples
+
++ What pathways are strongly activated in public sputum samples, even if it’s in a subset of samples?
+    + Experiment: ADAGE public sputum samples
++ What pathways are commonly activated among all public sputum samples?
+    + Experiment: ADAGE public sputum samples (can compare to all samples in the compendium or control samples)
++ Of all of these pathways, which ones are composed of genes that are specific to CF sputum?
+    + Experiment: Sophie public sputum samples vs. public controls
+        + For PAO1, controls will be public LB medium samples (exp1) and M63 (exp2)
+        + For PA14, controls will be public LB medium samples (either samples from many studies or just select a duplicate) (exp1)  and M63 (exp2)
+
+### RNA-seq from *P. aeruginosa* cultured on sputum (*ex vivo*)
+
++ Are there underrecognized gene expression pathways that are important in disease severity but that have been missed because there was no good comparator previously?
+    + Experiment: Sophie ex vivo sputum vs. M63
++ Does ASM mimic the sputum environment well?
+    + Experiments: Sophie ASM vs. M63; Sophie ASM vs. ex vivo sputum; Sophie ex vivo sputum vs. M63
+
+### Relating the Hogan lab data to publicly available data
+
++ Are genes that are activated in the public samples the same as those that are activated in the ex vivo samples?
+    + Are there common pathways/genes that are activated in all public and ex vivo samples that are not commonly differentially expressed?
+        + Experiments: ADAGE ex vivo samples; Sophie ex vivo sputum vs. M63
+    + Are there genes that are strongly activated in a subset of samples, both in the public and the ex vivo samples?
+        + Experiment: ADAGE ex vivo sputum samples
++ When we add metals, do we see activation of the same pathways as are activated in public data?
+    + Experiments: ADAGE ex vivo sputum_m (metals); ADAGE public sputum samples; Sophie ex vivo sputum vs ex vivo sputum_m
 
 ## Explanation of snakefiles and outputs
 
