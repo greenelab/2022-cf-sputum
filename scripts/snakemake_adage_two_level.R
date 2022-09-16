@@ -119,7 +119,6 @@ active_sigs <- get_active_signatures(limma_result = limma_result,
 
 
 # plots -------------------------------------------------------------------
-# uncomment these lines to produce default visualizations from ADAGE
 pdf(snakemake@output[['volcano_plot']])
 plot_volcano(limma_result = limma_result, highlight_signatures = active_sigs,
              interactive = TRUE)
