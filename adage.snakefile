@@ -2,7 +2,7 @@
 # specifically the file outputs/filt_norm_compendia/*compendium_p2_filtered_num_reads.csv
 # It uses this file as well as sets of samples defined in the R script to perform ADAGE analysis.
 
-STRAIN = ['pao1', 'pa14'] # only run pao1 since this is what the eADAGE model is based on
+STRAIN = ['pao1', 'pa14'] 
 CONTROLS = ['asm', 'm63', 'lb']
 GROUPS = ['spu', 'spu_m', 'spu_pub']
 
