@@ -1,5 +1,3 @@
-#devtools::install_github("greenelab/TDM")
-
 if (!require("BiocManager", quietly = TRUE))
   install.packages("BiocManager") # should be installed in conda environment already
 
