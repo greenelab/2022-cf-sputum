@@ -8,7 +8,7 @@ GROUPS = ['spu', 'spu_m', 'spu_pub']
 
 rule all:
     input:
-        expand("outputs/adage/{strain}-{group}-{control}_combined_activation_and_assoc_df.tsv", strain = STRAIN, control = CONTROLS, group = GROUPS)
+        expand("outputs/adage/combined_activation_and_assoc/{strain}-{group}-{control}_combined_activation_and_assoc_df.tsv", strain = STRAIN, control = CONTROLS, group = GROUPS)
 
 rule install_adage:
     output: install = "outputs/adage/adage_installed.txt"
@@ -20,17 +20,17 @@ rule run_adage:
         install = "outputs/adage/adage_installed.txt",
         num_reads = "outputs/filt_norm_compendia/{strain}_aligned_compendium_p2_filtered_num_reads.csv"
     output: 
-        data_activity = "outputs/adage/{strain}_{group}_{control}_data_activity.tsv",
-        limma_result = "outputs/adage/{strain}_{group}_{control}_limma_result.tsv",
-        volcano_plot = "outputs/adage/{strain}_{group}_{control}_volcano_plot.pdf",
-        activity_heatmap_plot = "outputs/adage/{strain}_{group}_{control}_activity_heatmap_plot.pdf",
-        marginal_activity = "outputs/adage/{strain}_{group}_{control}_marginal_activity.tsv",
-        marginal_limma = "outputs/adage/{strain}_{group}_{control}_marginal_time.tsv",
-        signature_overlap_plot = "outputs/adage/{strain}_{group}_{control}_signature_overlap_plot.pdf",
-        pathway_association_df = "outputs/adage/{strain}_{group}_{control}_pathway_association_df.tsv",
-        combined_activation_and_assoc_df = "outputs/adage/{strain}-{group}-{control}_combined_activation_and_assoc_df.tsv",
-        uncharacterized_sigs = "outputs/adage/{strain}_{group}_{control}_uncharacterized_sigs.txt",
-        unique_active_sigs_annotated_df = "outputs/adage/{strain}_{group}_{control}_unique_active_sigs_annotated_df.tsv",
+        data_activity = "outputs/adage/data_activity/{strain}_{group}_{control}_data_activity.tsv",
+        limma_result = "outputs/adage/limma_result/{strain}_{group}_{control}_limma_result.tsv",
+        volcano_plot = "outputs/adage/volcano_plot/{strain}_{group}_{control}_volcano_plot.pdf",
+        activity_heatmap_plot = "outputs/adage/activity_heatmap_plot/{strain}_{group}_{control}_activity_heatmap_plot.pdf",
+        marginal_activity = "outputs/adage/marginal_activity/{strain}_{group}_{control}_marginal_activity.tsv",
+        marginal_limma = "outputs/adage/marginal_limma/{strain}_{group}_{control}_marginal_time.tsv",
+        signature_overlap_plot = "outputs/adage/signature_overlap_plot/{strain}_{group}_{control}_signature_overlap_plot.pdf",
+        pathway_association_df = "outputs/adage/pathway_association/{strain}_{group}_{control}_pathway_association_df.tsv",
+        combined_activation_and_assoc_df = "outputs/adage/combined_activation_and_assoc/{strain}-{group}-{control}_combined_activation_and_assoc_df.tsv",
+        uncharacterized_sigs = "outputs/adage/uncharacterized_sigs/{strain}_{group}_{control}_uncharacterized_sigs.txt",
+        unique_active_sigs_annotated_df = "outputs/adage/unique_active_sigs_annotated/{strain}_{group}_{control}_unique_active_sigs_annotated_df.tsv",
     conda: "envs/adagepath.yml"
     script: "scripts/snakemake_adage_two_level.R"
  
