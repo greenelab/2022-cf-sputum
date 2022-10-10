@@ -8,3 +8,6 @@ notebooks/.ipynb_checkpoints/
 inputs/original_compendia/
 benchmarks
 inputs/sourmash_dbs
+inputs/sh_general_release_s_10.05.2021.tgz
+inputs/sh_general_release_s_10.05.2021/
+inputs/silva_nr_v138.1_train_set.fa.gz
