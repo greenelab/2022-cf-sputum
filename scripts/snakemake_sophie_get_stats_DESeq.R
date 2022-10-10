@@ -35,7 +35,20 @@ get_DE_stats_DESeq <- function(grp_metadata_file,
   }
  
   metadata$group <- as.factor(metadata$group)
-  ddset <- DESeqDataSetFromMatrix(expression_data, colData=metadata, design = ~group)
+  
+  # parse the grp_metadata_file character string to determine which deseq2 comparison we're performing
+  comparison <- gsub(".*__", "", basename(grp_metadata_file))
+  comparison <- gsub("_groups.tsv", "", comparison)
+  
+  if(comparison == "spu-vs-spu_m"){
+    # control for individual when comparing spu vs spu_m.
+    metadata$subject_id <- gsub("_M", "", metadata$sample)
+    ddset <- DESeqDataSetFromMatrix(expression_data, colData=metadata, 
+                                    design = ~subject_id + group)
+  } else {
+    # use default/uncontrolled for individual for every other case
+    ddset <- DESeqDataSetFromMatrix(expression_data, colData=metadata, design = ~group)
+  }
   
   deseq_object <- DESeq(ddset, quiet=TRUE)
   
@@ -51,7 +64,7 @@ get_DE_stats_DESeq <- function(grp_metadata_file,
   deseq_results <- results(deseq_object, independentFiltering=FALSE)
   
   deseq_results_df <-  as.data.frame(deseq_results)
-  
+
   # Save summary statistics of DEGs
   write.table(deseq_results_df, file = out_file, row.names = T, sep = "\t", quote = F)
 }
