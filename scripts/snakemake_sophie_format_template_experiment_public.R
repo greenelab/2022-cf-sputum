@@ -14,7 +14,14 @@ counts <- read_csv(snakemake@input[['counts']], show_col_types = F)
 
 # read in hogan lab sample metadata
 #metadata <- read_csv("inputs/metadata.csv")
-metadata <- read_csv(snakemake@input[['metadata']], show_col_types = F)
+metadata <- read_csv(snakemake@input[['metadata']], show_col_types = F) %>%
+  filter(!experiment_accession %in% c("SRX7101177", "SRX7101178", "SRX7101179", "SRX7101180", "SRX7101181")) # filter out low count samples; see comment below
+
+# below I recorded the counts for these samples when mapped against PAO1.
+# there aren't enough counts so I removed them here.
+# SRX7101177 SRX7101178 SRX7101179 SRX7101180 SRX7101181 
+# 131        476         49        164        263
+# Every other library has at least 7000 reads mapped to pao1.
 
 # determine experiment that is being compared ----------------------------------
 
