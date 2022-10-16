@@ -1,5 +1,6 @@
 # import all of the sophie libraries.
 # I chose to run all of the python sophie code via the "run" directive, which doesn't allow for the use of an environment.
+# I made this choice because it's easier to keep track of everything that is being run, and is more similar to the notebooks that Alex had originally created for running sophie.
 # Therefore, all of the dependencies for sophie need to be installed in the environment in which this workflow will be executed.
 
 import os
@@ -29,7 +30,7 @@ wildcard_constraints:
 # A few of the config-specified variables also need to be accessible as global variables in the snakefile.
 # They're used to name input/output files correctly.
 # I read them in below using sophie's config file reader.
-# NUM_SIMULATED_RUNS also needed to be specified as a range from 0:num_simulated_runs to properly solve files names, so that is specified below.
+# NUM_SIMULATED_RUNS (e.g. RUN_IDS below) also needed to be specified as a range from 0:num_simulated_runs to properly solve files names, so that is specified below.
 sophie_params = utils.read_config("config/sophie_hogan_comparisons.tsv")
 NN_ARCHITECTURE    = sophie_params["NN_architecture"]
 LATENT_DIM         = sophie_params["latent_dim"]
