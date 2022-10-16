@@ -1,5 +1,6 @@
 # import all of the sophie libraries.
 # I chose to run all of the python sophie code via the "run" directive, which doesn't allow for the use of an environment.
+# I made this choice because it's easier to keep track of everything that is being run, and is more similar to the notebooks that Alex had originally created for running sophie.
 # Therefore, all of the dependencies for sophie need to be installed in the environment in which this workflow will be executed.
 
 import os
