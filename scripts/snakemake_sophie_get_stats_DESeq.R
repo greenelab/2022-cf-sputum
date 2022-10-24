@@ -43,7 +43,7 @@ get_DE_stats_DESeq <- function(grp_metadata_file,
   if(comparison == "spu-vs-spu_m"){
     # control for individual when comparing spu vs spu_m.
     metadata$subject_id <- gsub("_M", "", metadata$sample)
-    ddset <- DESeqDataSetFromMatrix(expression_data, colData=metadata, 
+    ddset <- DESeqDataSetFromMatrix(expression_data, colData = metadata, 
                                     design = ~subject_id + group)
   } else {
     # use default/uncontrolled for individual for every other case
