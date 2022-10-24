@@ -40,7 +40,7 @@ get_DE_stats_DESeq <- function(grp_metadata_file,
   comparison <- gsub(".*__", "", basename(grp_metadata_file))
   comparison <- gsub("_groups.tsv", "", comparison)
   
-  if(comparison == "spu-vs-spu_m"){
+  if (comparison == "spu-vs-spu_m") {
     # control for individual when comparing spu vs spu_m.
     metadata$subject_id <- gsub("_M", "", metadata$sample)
     ddset <- DESeqDataSetFromMatrix(expression_data, colData = metadata, 
