@@ -330,7 +330,7 @@ rule get_DE_stats_real_data:
         data_type = "template",
         run_id    = "real"
     conda: "envs/diffex.yml"
-    script: "scripts/snakefile_sophie_get_stats_DESeq.R"
+    script: "scripts/snakemake_sophie_get_stats_DESeq.R"
 
 rule get_DE_stats_simulated_data:
     input:
